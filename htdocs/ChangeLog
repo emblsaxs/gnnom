@@ -1,0 +1,10 @@
+2019-09-10  Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* dara.php: Debug commented.
+	* gnnom-result.php: Scaling nn_rg and nn_dmax on angular units.
+
+2019-09-10  Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* dara.php: Scaling the curve prior predicting.
+	* gnnom-result.php: Likewise.
+
