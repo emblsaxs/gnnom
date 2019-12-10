@@ -1,0 +1,136 @@
+2019-12-06  Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* makemodel-scalar.py: Validation data set is 10% of a learning set.
+
+2019-12-06  Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* gnnom_batch.py: Number of points in input data is not hardcoded.
+
+2019-12-06  Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* gnnom_batch.py: Minor changes in interface.
+
+2019-12-06  Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* gnnom_batch.py: save csv if --o arg is provided + CAMEL.
+
+2019-12-06  Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* gnnom_batch.py: argparse for parsing the arguments.
+
+2019-12-04  Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* makemodel-talos.py: New.
+
+2019-12-03  Al Kikhney  <plmnnk@embl-hamburg.de>
+            Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* makemodel-scalar.py: New.
+
+2019-11-06  Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* gnnom-input-template.dat: Grid template for the input data.
+
+2019-09-10  Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* htdocs/dara.php: Deleted redundant methods.
+        * htdocs/pofr2img.cfg: Put arrow and label in front.
+
+2019-09-09  Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* htdocs/gnnom-result.php: Scaling on nm/angstroms were mixed up.
+	* htdocs/dara.php: Likewise.
+
+2019-09-09  Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* htdocs/gnnom-result.php: Normalize on Rg prior prediction.
+	* htdocs/dara.php: New.
+        * htdocs/pofr2img.cfg: Minor changes.
+
+2019-09-06  Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* htdocs/gnnom-result.php: Pass Dmax to gnuplot.
+        * htdocs/pofr2img.cfg: Beatified.
+
+2019-08-06  Al Kikhney  <plmnnk@embl-hamburg.de>
+            Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* htdocs/gnnom-result.php: Run separate NNs for Rg, Dmax, MW.
+	Display chi-squared.
+
+2019-08-05  Al Kikhney  <plmnnk@embl-hamburg.de>
+            Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* gnnom.py: Uncommented crop p(r > Dmax).
+	* htdocs/gnnom.php: Renamed "Training set" to "Macromolecule type".
+	* htdocs/gnnom-result.php: Assume p(r) is multiplied by 'Normalization coefficient'.
+
+2019-08-05  Al Kikhney  <plmnnk@embl-hamburg.de>
+            Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* htdocs/gnnom.php: New.
+	* htdocs/gnnom-result.php: New.
+
+2019-08-05  Al Kikhney  <plmnnk@embl-hamburg.de>
+            Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* gnnom.py: Read 'Normalization coefficient' only if present; do not print.
+	Crop p(r > Dmax).
+
+2019-08-05  Al Kikhney  <plmnnk@embl-hamburg.de>
+            Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* models/gnnom_dmax.json: New model with normalization coefficient included.
+	* models/gnnom_dmax.h5: Likewise.
+
+2019-08-05  Al Kikhney  <plmnnk@embl-hamburg.de>
+            Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* makemodel_pddf.py: Expect always 301 PDDF points, nullify p(r>Dmax).
+	Write 'Normalization coefficient' to the model JSON file.
+	* gnnom.py: Read 'Normalization coefficient' from the model JSON file.
+
+2019-08-05  Al Kikhney  <plmnnk@embl-hamburg.de>
+
+	* gnnom.py: Switched from 302 points to 301 in PDDF.
+
+2019-08-05  Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* tools/parser.py: Moved from the root.
+	* makemodel_pddf.py: Save normalization coefficient to
+        the footer of *.json model file.
+	* gnnom.py: Parse and read normalization coefficient. 
+
+2019-08-02  Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* tools/copy_from_directory.py: New.
+	* tools/read_kdtree.py: New. 
+
+2019-08-02  Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* gnnom_batch.py: New.
+	* parser.py: New. Parses CRYSOL log files.
+
+2019-07-16  Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* gnnom.py: Code refactoring.
+	* makemodel_rg.py: Code refactoring.
+	* makemodel_dmax.py: Code refactoring.
+	* makemodel_mw.py: Code refactoring.
+	* makemodel_pddf.py: Code refactoring.
+
+2019-07-15  Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* gnnom.py: Initial commit.
+	* makemodel_rg.py: New.
+	* makemodel_dmax.py: New.
+	* makemodel_mw.py: New.
+	* makemodel_pddf.py: New.
+	* models/gnnom_rg.h5: New.
+	* models/gnnom_rg.json: New.
+	* models/gnnom_dmax.h5: New.
+	* models/gnnom_dmax.json: New.
+	* models/gnnom_mw.h5: New.
+	* models/gnnom_mw.json: New.
+	* models/gnnom_pddf.h5: New.
+	* models/gnnom_pddf.json: New.
