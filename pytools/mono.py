@@ -53,7 +53,7 @@ for r in rng:
     forsvd = Imat[:, peaks - r: peaks + r]
     u, s, vh = (np.linalg.svd(forsvd))
     #print("For the range of " + str(2*r) + " frames the first 5 singular values: ")
-    #print(s[0:5])
+    #print(s[0:5]) test2222
     
     plt.subplot(len(rng),1,int(i))
     s = "sigma-1 = " + str(round(s[0],1)) + " sigma-2 = " + str(round(s[1],1)) + " sigma-3 = " + str(round(s[2],1))
