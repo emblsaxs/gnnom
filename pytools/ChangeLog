@@ -1,3 +1,7 @@
+2019-12-11  Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
+
+	* pytools/compare.py: New.
+
 2019-12-10  Dmitry Molodenskiy  <dmolodenskiy@embl-hamburg.de>
 
 	* pytools/mono.py: New.
