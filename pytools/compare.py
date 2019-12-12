@@ -57,7 +57,7 @@ with open(outCsvPath, mode='w') as outfile:
             histo.append(diff)
 outfile.close()
 
-# if metric = 'h' --> plot histogram
+# if metric == 'h' --> plot histogram
 if metric == "h":
     # the histogram of the data
     n, bins, patches = plt.hist(histo, 50, density=True, facecolor='g', alpha=0.75)
