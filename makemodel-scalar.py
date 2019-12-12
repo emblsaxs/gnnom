@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 # coding: utf-8
 
 import argparse
@@ -18,7 +18,7 @@ import keras
 import numpy as np
 import saxsdocument
 import os
-from keras.callbacks import TensorBoard
+from keras.callbacks import TensorBoard, ModelCheckpoint
 
 from keras.models import Sequential
 from keras.layers import Dense, Activation
@@ -128,7 +128,7 @@ model.compile(optimizer='adam', loss='mse')
 
 train_history = model.fit(np.array(Is[0:n_cases]), np.array(parameters[0:n_cases]), epochs=num_epochs,  batch_size=32,
                           validation_data =  (np.array(Is[n_cases:n_all]), np.array(parameters[n_cases:n_all])),
-                          callbacks = [tensorboard])
+                          callbacks = [tensorboard, ModelCheckpoint('best.h5', save_best_only=True)])
 
 
 
