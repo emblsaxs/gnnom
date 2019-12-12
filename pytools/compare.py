@@ -23,6 +23,7 @@ ms = ['d', 'sd', 'h']
 if metric not in ms:
     print("wrong metric! exiting...")
     os._exit(0)
+
 # convert to dictionaries
 with open(csv1, mode='r') as infile:
     reader = csv.reader(infile)
@@ -37,11 +38,12 @@ with open(csv2, mode='r') as infile:
 # find intersecions
 fSet   = set(dict1)
 sSet   = set(dict2)
-
 sameId   = []
 for name in fSet.intersection(sSet):
     sameId.append(name)
 print(str(len(sameId)) + " out of " + str(max(len(dict1), len(dict2))) + " ids are identical")
+
+# write output csv
 with open(outCsvPath, mode='w') as outfile:
     writer = csv.writer(outfile)
     histo = []
@@ -49,12 +51,13 @@ with open(outCsvPath, mode='w') as outfile:
         diff = round(float(dict1[n]) - float(dict2[n]), 2)
         if metric == "d":
             writer.writerow([n, str(diff)])
-        if metric == "sd":
-            writer.writerow([n, str(round(diff**2/float(dict1[n]),2))])
-        if metric == "h":
+        if metric in ["sd", "h"]:
+            rDiff = round(diff**2/float(dict1[n]),2)
+            writer.writerow([n, str(rDiff)])
             histo.append(diff)
 outfile.close()
 
+# if metric = 'h' --> plot histogram
 if metric == "h":
     # the histogram of the data
     n, bins, patches = plt.hist(histo, 50, density=True, facecolor='g', alpha=0.75)
