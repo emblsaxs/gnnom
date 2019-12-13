@@ -6,7 +6,7 @@ parser.add_argument('csv1',  metavar='csv1',   type=str, help='path to the templ
 parser.add_argument('csv2',  metavar='csv2',   type=str, help='path to the csv file for comparison')
 
 parser.add_argument('-o', '--output', type=str, default="", help='save output in CSV format')
-parser.add_argument('-m', '--metric', type=str, default="", help='options: d(diff); sd(squared diff); h (histo)')
+parser.add_argument('-m', '--metric', type=str, default="", help='options: d(diff); sd(squared diff); h (histo); l (csv1 vs csv2)')
 
 args = parser.parse_args()
 
@@ -19,9 +19,9 @@ csv2 = args.csv2
 
 outCsvPath    = args.output
 metric        = args.metric
-ms = ['d', 'sd', 'h']
+ms = ['d', 'sd', 'h', 'l']
 if metric not in ms:
-    print("wrong metric! exiting...")
+    print("wrong metric! dying...")
     os._exit(0)
 
 # convert to dictionaries
@@ -45,10 +45,17 @@ print(str(len(sameId)) + " out of " + str(max(len(dict1), len(dict2))) + " ids a
 
 # write output csv
 with open(outCsvPath, mode='w') as outfile:
-    writer = csv.writer(outfile)
-    histo = []
+    writer  = csv.writer(outfile)
+    histo   = []
+    linGT   = []
+    linC    = []
     for n in sameId:
         diff = round(float(dict1[n]) - float(dict2[n]), 2)
+        if metric == "l":
+            #writer.writerow(["#Standart deviation: ", np.std(diff)])
+            linGT.append(round(float(dict1[n]),2))
+            linC.append(round(float(dict2[n]), 2))
+            writer.writerow([round(float(dict1[n]),2),round(float(dict2[n]),2)])
         if metric == "d":
             writer.writerow([n, str(diff)])
         if metric in ["sd", "h"]:
@@ -64,6 +71,18 @@ if metric == "h":
 
     plt.xlabel('Bins')
     plt.ylabel('Probability')
+    std = np.std(diff)
+    med = np.median(diff)
+    plt.title("std = " + str(std) + "\nmedian = " + str(med))
+    plt.grid(True)
+    plt.show()
+
+# if metric == 'l' --> plot linear regression
+if metric == "l":
+    #n, bins, patches = plt.hist(histo, 50, density=True, facecolor='g', alpha=0.75)
+    plt.scatter(linGT, linC, c = 'tab:blue', alpha = 0.3, edgecolors='none')
+    plt.xlabel('Ground truth')
+    plt.ylabel('Predicted')
     std = np.std(diff)
     med = np.median(diff)
     plt.title("std = " + str(std) + "\nmedian = " + str(med))
