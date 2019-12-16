@@ -24,16 +24,16 @@ if metric not in ms:
     print("wrong metric! dying...")
     os._exit(0)
 
-# convert to dictionaries
-with open(csv1, mode='r') as infile:
-    reader = csv.reader(infile)
-    for rows in reader:
-       dict1 = {rows[0]:rows[1] for rows in reader}
+#convert to dictionaries
+with open(csv1, mode='r', newline = '') as infile1:
+    reader = csv.reader(infile1)
+    dict1 = {rows[0]:rows[1] for rows in reader}
 
-with open(csv2, mode='r') as infile:
-    reader = csv.reader(infile)
-    for rows in reader:
-       dict2 = {rows[0]:rows[1] for rows in reader}
+with open(csv2, mode='r', newline = '') as infile2:
+    reader = csv.reader(infile2)
+    dict2 = {rows[0]:rows[1] for rows in reader}
+
+
 
 # find intersecions
 fSet   = set(dict1)
