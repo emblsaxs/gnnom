@@ -25,12 +25,12 @@ if metric not in ms:
     os._exit(0)
 
 #convert to dictionaries
-with open(csv1, mode='r', newline = '') as infile1:
-    reader = csv.reader(infile1)
+with open(csv1, mode='r', newline = '') as infile:
+    reader = csv.reader(infile)
     dict1 = {rows[0]:rows[1] for rows in reader}
 
-with open(csv2, mode='r', newline = '') as infile2:
-    reader = csv.reader(infile2)
+with open(csv2, mode='r', newline = '') as infile:
+    reader = csv.reader(infile)
     dict2 = {rows[0]:rows[1] for rows in reader}
 
 
@@ -46,12 +46,12 @@ print(str(len(sameId)) + " out of " + str(max(len(dict1), len(dict2))) + " ids a
 # write output csv
 with open(outCsvPath, mode='w') as outfile:
     writer  = csv.writer(outfile)
-    ad       = []
+    ad      = []
     rd      = []
     linGT   = []
     linC    = []
     for num, n in enumerate(sameId, start = 1):
-        diff = round(float(dict1[n]) - float(dict2[n]), 4)
+        diff = round(float(dict2[n]) - float(dict1[n]), 4)
         if metric == "l":
             #writer.writerow(["#Standart deviation: ", np.std(diff)])
             linGT.append(round(float(dict1[n]),4))
