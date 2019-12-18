@@ -87,16 +87,16 @@ for file in logFiles:
     rgdmaxmw = []
     # Read 'Molecular Weight: 0.4330E+06':
     for line in lines:
-        if "slope" in line:
-            rgdmaxmw.append(line.split()[-1])
-            parameters.append(rgdmaxmw)
-            break
-
-
-#        if "Weight" in line:
-#            rgdmaxmw.append(line.split()[2])
+#        if "slope" in line:
+#            rgdmaxmw.append(line.split()[-1])
 #            parameters.append(rgdmaxmw)
 #            break
+
+
+        if "Weight" in line:
+            rgdmaxmw.append(line.split()[2])
+            parameters.append(rgdmaxmw)
+            break
 
 print("...done.")
 
@@ -126,14 +126,11 @@ model.add(Dense(output))
 
 model.compile(optimizer='adam', loss='mse')
 
+model_name = "gnnom-avrg-i-rg-001-04-e" + str(args.epochs) + "-u" + str(args.units)
+
 train_history = model.fit(np.array(Is[0:n_cases]), np.array(parameters[0:n_cases]), epochs=num_epochs,  batch_size=32,
                           validation_data =  (np.array(Is[n_cases:n_all]), np.array(parameters[n_cases:n_all])),
-                          callbacks = [tensorboard, ModelCheckpoint('best.h5', save_best_only=True)])
-
-
-
-
-model_name = "gnnom-avrg-i-rg-001-04-e" + str(args.epochs) + "-u" + str(args.units)
+                          callbacks = [tensorboard, ModelCheckpoint(model_name + '-best.h5', save_best_only=True)])
 
 
 loss = train_history.history['loss']
@@ -155,6 +152,8 @@ data = np.arange(N)
 plt.imshow(model.get_weights()[0], cmap='coolwarm')
 plt.savefig('weights-' + model_name + '.png')
 plt.clf()
+
+np.savetxt('loss-' + model_name + '.int', np.transpose(np.vstack((np.arange(num_epochs),loss, val_loss))), fmt = "%.8e")
 
 scores = model.evaluate(np.array(Is[0:n_cases]), np.array(parameters[0:n_cases]), verbose=0)
 
