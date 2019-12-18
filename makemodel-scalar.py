@@ -130,7 +130,7 @@ model_name = "gnnom-avrg-i-rg-001-04-e" + str(args.epochs) + "-u" + str(args.uni
 
 train_history = model.fit(np.array(Is[0:n_cases]), np.array(parameters[0:n_cases]), epochs=num_epochs,  batch_size=32,
                           validation_data =  (np.array(Is[n_cases:n_all]), np.array(parameters[n_cases:n_all])),
-                          callbacks = [tensorboard, ModelCheckpoint(model_name + '-best.h5', save_best_only=True)])
+                          callbacks = [tensorboard, ModelCheckpoint(model_name + '.h5', save_best_only=True)])
 
 
 loss = train_history.history['loss']
@@ -165,7 +165,7 @@ model_json = model.to_json()
 with open(model_name + ".json", "w") as json_file:
     json_file.write(model_json)
 # serialize weights to HDF5
-model.save_weights(model_name + ".h5")
+#model.save_weights(model_name + ".h5") #last but not best weights
 print("Saved model " + model_name + " to disk")
 
 #print("average Rg over the learning set:   " + str(avrgRg))
