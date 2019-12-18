@@ -21,11 +21,8 @@ h5Filename    = args.weights
 inputFolder   = args.dataPath
 outCsvPath    = args.output
 firstPointIndex = int(args.first) - 1
-lastPointIndex = int(args.last)
-#TODO: process lastPointIndex!!!
 
 
-#inputLength   = 113 # I(s) points
 outputLength  = 302 # p(r) points
 
 try:
@@ -36,28 +33,43 @@ try:
     loadedModel = model_from_json(loadedModelJson)
     # load weights into new model
     loadedModel.load_weights(h5Filename)
+    inputLength = loadedModel.input_shape[1]  # I(s) points
+
+    if firstPointIndex >= inputLength:
+        print("--first should be less than " + str(inputLength))
+        exit()
+
+    if int(args.last) == -1:
+        lastPointIndex = inputLength
+    elif int(args.last) > inputLength:
+        print("--last should be less than " + str(inputLength))
+        exit()
+    else:
+        lastPointIndex = int(args.last)
     print("Model loaded. Yeah!")
-except:
+except Exception as e:
     print("Error: Oops, model can not be uploaded.")
+    print(e)
+    exit()
+
 # output csv
 outCsv = []
 for inputFilename in os.listdir(inputFolder):
     try:
         doc  = saxsdocument.read(os.path.join(inputFolder, inputFilename))
         dat  = np.transpose(np.array(doc.curve[0]))
-        s  = dat[0][firstPointIndex:]
-        Is = dat[1][firstPointIndex:]
+        s  = dat[0][firstPointIndex:lastPointIndex]
+        Is = dat[1][firstPointIndex:lastPointIndex]
+        if len(Is) != lastPointIndex - firstPointIndex:
+            continue
     except:
         print("Error: Could not read input data")
 
-    inputLength = len(Is)
-    
-
 
     # Assume Smin is correct; fill up to required Smax with typical I(0.4) intensity (assuming I(0) = 1.0)
-    if(len(Is) > inputLength): print("Too many points in the data: " + str(len(Is)) + "points")
-    zeroes = np.full((inputLength - len(Is)), Is[-1])
-    IsExtended = np.concatenate((Is, zeroes))
+    #if(len(Is) > inputLength): print("Too many points in the data: " + str(len(Is)) + "points")
+    #zeroes = np.full((inputLength - len(Is)), Is[-1])
+    #IsExtended = np.concatenate((Is, zeroes))
 
 
     # evaluate loaded model on test data
@@ -66,7 +78,8 @@ for inputFilename in os.listdir(inputFolder):
     #print("%s: %.2f%%" % (loaded_model.metrics_names[1], score[1]*100))
     r = np.arange(0.0, outputLength, 1.0)
 
-    test = np.array([IsExtended, ])
+    #test = np.array([IsExtended, ])
+    test = np.array([Is, ])
     pred = loadedModel.predict(test)
 
     #TODO: multiply by p(r) normalization coefficient
