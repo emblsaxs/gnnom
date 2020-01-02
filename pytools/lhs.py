@@ -81,7 +81,7 @@ for k, bin in enumerate(pairs1):
     for i, bin2 in enumerate(pairs2):
         for protein2 in f2FromBin:
             f2Val = list(protein2.values())[0]
-            if (f1Val >= bin2[0]) and (f1Val < bin2[1]) and (i <= numFromEachBin):
+            if (f2Val >= bin2[0]) and (f2Val < bin2[1]) and (i <= numFromEachBin):
                 finalList.append(protein2)
 
 print(len(finalList))
