@@ -106,7 +106,7 @@ if metric == "l":
 # if metric == 'h' --> plot histogram
 if metric == "h":
     # the histogram of the data
-    n, bins, patches = plt.hist(rd, 50, density=True, facecolor='g', alpha=0.75)
+    n, bins, patches = plt.hist(rd, edgecolor='black', bins=50, density=True, facecolor='g', alpha=0.75)
 
     plt.xlabel('Bins')
     plt.ylabel('Probability')
