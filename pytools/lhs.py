@@ -5,13 +5,14 @@ parser = argparse.ArgumentParser(description='Uniformly selects distribution ove
                                              'Note: the file must contain id column')
 parser.add_argument('csv', metavar='csv', type=str, help='path to the csv file')
 parser.add_argument('f1', metavar='f1', type=str, help='first factor to distribute over')
-parser.add_argument('f1Low', metavar='f1Low', type=str, help='low boundary for f1 factor')
-parser.add_argument('f1High', metavar='f1High', type=str, help='higher boundary for f1 factor')
+parser.add_argument('f1Low', metavar='f1Low', type=float, help='low boundary for f1 factor')
+parser.add_argument('f1High', metavar='f1High', type=float, help='higher boundary for f1 factor')
 parser.add_argument('f2', metavar='f2', type=str, help='second factor to distribute over')
-parser.add_argument('f2Low', metavar='f2Low', type=str, help='low boundary for f2 factor')
-parser.add_argument('f2High', metavar='f2High', type=str, help='higher boundary for f2 factor')
-parser.add_argument('num1', metavar='num1', type=str, help='number of bins')
-parser.add_argument('num2', metavar='num2', type=str, help='number of proteins from each bin')
+parser.add_argument('f2Low', metavar='f2Low', type=float, help='low boundary for f2 factor')
+parser.add_argument('f2High', metavar='f2High', type=float, help='higher boundary for f2 factor')
+parser.add_argument('num1', metavar='num1', type=int, help='number of bins')
+parser.add_argument('num2', metavar='num2', type=int, help='number of proteins from each bin')
+parser.add_argument('--type', metavar='type', type=str, default="p", help='p -only proteins / n - only DNA/RNA')
 
 parser.add_argument('-o', '--output', type=str, default="", help='save output in CSV format')
 
@@ -24,13 +25,20 @@ import matplotlib.pyplot as plt
 
 inputCsv = args.csv
 f1 = args.f1
-f1Low = float(args.f1Low)
-f1High = float(args.f1High)
+f1Low = args.f1Low
+f1High = args.f1High
 f2 = args.f2
-f2Low = float(args.f2Low)
-f2High = float(args.f2High)
-binsNum = int(args.num1)
-numFromBin = int(args.num2)
+f2Low = args.f2Low
+f2High = args.f2High
+binsNum = args.num1
+numFromBin = args.num2
+typeP = args.type
+
+# by default takes only proteins!
+if typeP == "n":
+    v = 0
+else:
+    v = 1
 
 print(f"Number of bins in each distribution is {binsNum}")
 outputCsv = args.output
@@ -49,7 +57,7 @@ if os.path.exists(inputCsv):
         for row in csvReader:
             f1Float = float(row[f1])
             f2Float = float(row[f2])
-            if f1Float >= f1Low and f1Float <= f1High:
+            if f1Float >= f1Low and f1Float <= f1High and int(row["is_protein"]) == v:
                 if f2Float >= f2Low and f2Float <= f2High:
                     shortArr.append({"id": row["id"], f1: f1Float, f2: f2Float})
 else:
