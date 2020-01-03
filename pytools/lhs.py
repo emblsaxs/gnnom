@@ -1,7 +1,8 @@
 #!/usr/bin/python
 import argparse
 
-parser = argparse.ArgumentParser(description='Uniformly selects distribution over two factors from a CSV file.')
+parser = argparse.ArgumentParser(description='Uniformly selects distribution over two factors from a CSV file. '
+                                             'Note: the file must contain id column')
 parser.add_argument('csv', metavar='csv', type=str, help='path to the csv file')
 parser.add_argument('f1', metavar='f1', type=str, help='first factor to distribute over')
 parser.add_argument('f1Low', metavar='f1Low', type=str, help='low boundary for f1 factor')
@@ -30,7 +31,7 @@ f2High = float(args.f2High)
 num = float(args.num)
 binsNum = (int)(np.sqrt(float(num)))
 print(f"number of bins in each distribution is {binsNum}")
-out = args.output
+outputCsv = args.output
 if os.path.exists(inputCsv):
     with open(inputCsv) as csvFile:
         csvReader = csv.DictReader(csvFile, delimiter=',')
@@ -40,20 +41,22 @@ if os.path.exists(inputCsv):
         if f2 not in (csvReader.fieldnames):
             print(f"No such parameter {f2}!")
             exit()
-        # save the arrays
-        f1Arr = []
-        f2Arr = []
+
         # to speed up the calculations let's make up a shorter array of dicts {id : [f1, f2]}
         shortArr = []
         for row in csvReader:
-            if float(row[f1]) >= f1Low and float(row[f1]) <= f1High:
-                if float(row[f2]) >= f2Low and float(row[f2]) <= f2High:
-                    f1Arr.append(float(row[f1]))
-                    f2Arr.append(float(row[f2]))
-                    shortArr.append({row["id"]: [float(row[f1]), float(row[f2])]})
+            f1Float = float(row[f1])
+            f2Float = float(row[f2])
+            if f1Float >= f1Low and f1Float <= f1High:
+                if f2Float >= f2Low and f2Float <= f2High:
+                    shortArr.append({"id": row["id"], f1: f1Float, f2: f2Float})
 else:
     print("No such file you dumbass! ")
     exit()
+
+# Do we need it?
+f1Arr = [d[f1] for d in shortArr]
+f2Arr = [d[f1] for d in shortArr]
 
 f1Arr.sort()
 f2Arr.sort()
@@ -61,34 +64,39 @@ f2Arr.sort()
 finalList = []
 # compute histograms
 hist1, bins1 = np.histogram(f1Arr, bins=binsNum)
+# pairs of left-right boundaries for each bin
 pairs1 = zip(bins1, bins1[1:])
-for k, bin in enumerate(pairs1):
+for i, bin in enumerate(pairs1):
     # array of second factor values
-    f2FromBin = []
-    f2FromBinArr = []
-    # take (int) num/len(pairs) the most different over f2 elements
-    numFromEachBin = (num / len(bins1))
+    proteinsFromBin = []
+    # take binsNum from each bin -> total number will be binsNum**2
     for protein in shortArr:
-        f1Val = list(protein.values())[0][0]
-        # for all proteins within the bin build histogram and take numFromEachBin from each bin
-        if (f1Val >= bin[0]) and (f1Val < bin[1]) and (k <= numFromEachBin):
-            f2Val = list(protein.values())[0][1]
-            f2FromBin.append({list(protein.keys())[0]: f2Val})
-            f2FromBinArr.append(f2Val)
-    hist2, bins2 = np.histogram(f2FromBinArr, bins=binsNum)
+        # for all proteins within the bin build histogram and take 1 sample from each bin of the new distribution
+        if (protein[f1] >= bin[0]) and (protein[f1] < bin[1]):
+            proteinsFromBin.append(protein)
+
+    hist2, bins2 = np.histogram([d[f2] for d in proteinsFromBin], bins=binsNum)
     pairs2 = zip(bins2, bins2[1:])
-    print(len(f2FromBin))
-    for i, bin2 in enumerate(pairs2):
-        for protein2 in f2FromBin:
-            f2Val = list(protein2.values())[0]
-            if (f2Val >= bin2[0]) and (f2Val < bin2[1]) and (i <= numFromEachBin):
+    print(f"{i} bin has {len(proteinsFromBin)} proteins")
+    for j, bin2 in enumerate(pairs2):
+        for protein2 in proteinsFromBin:
+            if (protein2[f2] >= bin2[0]) and (protein2[f2] < bin2[1]) and (j < 1):
                 finalList.append(protein2)
+                print(f"One protein added to finalList...")
 
 print(len(finalList))
 
 # cdf = hist1.cumsum()
 # cdf_normalized = cdf * hist1.max()/ cdf.max()
 # plt.plot(cdf_normalized, color = 'b')
+
+# write output csv
+with open(outputCsv, mode='w') as outfile:
+    writer = csv.writer(outfile, delimiter=',', quoting=csv.QUOTE_NONE)
+    for protein in finalList:
+        # s = f"{protein['id']}, {protein[f1]}, {protein[f2]}"
+        writer.writerow([protein['id']] + [protein[f1]] + [protein[f2]])
+
 # plot histograms
 fig, (ax1, ax2) = plt.subplots(1, 2, tight_layout=True)
 
@@ -101,3 +109,4 @@ ax2.legend([f2], loc="upper right")
 ax2.set_xticks(np.linspace(min(f2Arr), max(f2Arr), 10))
 
 plt.show()
+
