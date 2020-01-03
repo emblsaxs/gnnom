@@ -82,9 +82,9 @@ for i, bin in enumerate(pairs1):
         for protein2 in proteinsFromBin:
             if (protein2[f2] >= bin2[0]) and (protein2[f2] < bin2[1]) and (j < 1):
                 finalList.append(protein2)
-                print(f"One protein added to finalList...")
+                # print(f"One protein added to finalList...")
 
-print(len(finalList))
+print(f"{len(finalList)} files is written to {outputCsv}")
 
 # cdf = hist1.cumsum()
 # cdf_normalized = cdf * hist1.max()/ cdf.max()
@@ -97,16 +97,29 @@ with open(outputCsv, mode='w') as outfile:
         # s = f"{protein['id']}, {protein[f1]}, {protein[f2]}"
         writer.writerow([protein['id']] + [protein[f1]] + [protein[f2]])
 
+# Do we need it?
+f3Arr = [d[f1] for d in finalList]
+f4Arr = [d[f1] for d in finalList]
+
+f3Arr.sort()
+f4Arr.sort()
+
 # plot histograms
-fig, (ax1, ax2) = plt.subplots(1, 2, tight_layout=True)
+fig, ax = plt.subplots(2, 2, tight_layout=True)
+ax[0, 0].hist(f1Arr, edgecolor='black', bins=binsNum, facecolor='b', alpha=0.5)
+ax[0, 0].set_xticks(np.linspace(min(f1Arr), max(f1Arr), 10))
+ax[0, 0].legend([f"{f1} all"], loc="upper right")
 
-ax1.hist(f1Arr, edgecolor='black', bins=binsNum, facecolor='b', alpha=0.5, label=f1)
-ax2.hist(f2Arr, edgecolor='black', bins=binsNum, facecolor='g', alpha=0.5, label=f2)
+ax[1, 0].hist(f2Arr, edgecolor='black', bins=binsNum, facecolor='g', alpha=0.5)
+ax[1, 0].set_xticks(np.linspace(min(f2Arr), max(f2Arr), 10))
+ax[1, 0].legend([f"{f2} all"], loc="upper right")
 
-ax1.set_xticks(np.linspace(min(f1Arr), max(f1Arr), 10))
-ax1.legend([f1], loc="upper right")
-ax2.legend([f2], loc="upper right")
-ax2.set_xticks(np.linspace(min(f2Arr), max(f2Arr), 10))
+ax[0, 1].hist(f3Arr, edgecolor='black', bins=binsNum, facecolor='b', alpha=0.5)
+ax[0, 1].set_xticks(np.linspace(min(f3Arr), max(f3Arr), 10))
+ax[0, 1].legend([f"{f1} selected"], loc="upper right")
+
+ax[1, 1].hist(f4Arr, edgecolor='black', bins=binsNum, facecolor='g', alpha=0.5)
+ax[1, 1].set_xticks(np.linspace(min(f4Arr), max(f4Arr), 10))
+ax[1, 1].legend([f"{f2} selected"], loc="upper right")
 
 plt.show()
-
