@@ -10,7 +10,8 @@ parser.add_argument('f1High', metavar='f1High', type=str, help='higher boundary 
 parser.add_argument('f2', metavar='f2', type=str, help='second factor to distribute over')
 parser.add_argument('f2Low', metavar='f2Low', type=str, help='low boundary for f2 factor')
 parser.add_argument('f2High', metavar='f2High', type=str, help='higher boundary for f2 factor')
-parser.add_argument('num', metavar='num', type=str, help='number of entries to select')
+parser.add_argument('num1', metavar='num1', type=str, help='number of bins')
+parser.add_argument('num2', metavar='num2', type=str, help='number of proteins from each bin')
 
 parser.add_argument('-o', '--output', type=str, default="", help='save output in CSV format')
 
@@ -28,9 +29,9 @@ f1High = float(args.f1High)
 f2 = args.f2
 f2Low = float(args.f2Low)
 f2High = float(args.f2High)
-num = float(args.num)
-# binsNum = (int)(np.sqrt(float(num)))
-binsNum = (int)(num)
+binsNum = int(args.num1)
+numFromBin = int(args.num2)
+
 print(f"Number of bins in each distribution is {binsNum}")
 outputCsv = args.output
 if os.path.exists(inputCsv):
@@ -57,7 +58,7 @@ else:
 
 # Do we need it?
 f1Arr = [d[f1] for d in shortArr]
-f2Arr = [d[f1] for d in shortArr]
+f2Arr = [d[f2] for d in shortArr]
 f1Arr.sort()
 f2Arr.sort()
 
@@ -80,7 +81,7 @@ for i, bin in enumerate(pairs1):
     print(f"{i} bin has {len(proteinsFromBin)} proteins")
     for bin2 in pairs2:
         for j, protein2 in enumerate(proteinsFromBin):
-            if (protein2[f2] >= bin2[0]) and (protein2[f2] < bin2[1]) and (j == 0):
+            if (protein2[f2] >= bin2[0]) and (protein2[f2] < bin2[1]) and (j <= numFromBin):
                 finalList.append(protein2)
                 # DEBUG
                 #print(f"bin1: {i}        bin2: {j}")
@@ -94,13 +95,14 @@ print(f"{len(finalList)} files is written to {outputCsv}")
 # write output csv
 with open(outputCsv, mode='w') as outfile:
     writer = csv.writer(outfile, delimiter=',', quoting=csv.QUOTE_NONE)
+    writer.writerow(['id'] + [f1] + [f2])
     for protein in finalList:
         # s = f"{protein['id']}, {protein[f1]}, {protein[f2]}"
         writer.writerow([protein['id']] + [protein[f1]] + [protein[f2]])
 
 # Do we need it?
 f3Arr = [d[f1] for d in finalList]
-f4Arr = [d[f1] for d in finalList]
+f4Arr = [d[f2] for d in finalList]
 
 f3Arr.sort()
 f4Arr.sort()
