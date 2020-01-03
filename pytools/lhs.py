@@ -29,8 +29,9 @@ f2 = args.f2
 f2Low = float(args.f2Low)
 f2High = float(args.f2High)
 num = float(args.num)
-binsNum = (int)(np.sqrt(float(num)))
-print(f"number of bins in each distribution is {binsNum}")
+# binsNum = (int)(np.sqrt(float(num)))
+binsNum = (int)(num)
+print(f"Number of bins in each distribution is {binsNum}")
 outputCsv = args.output
 if os.path.exists(inputCsv):
     with open(inputCsv) as csvFile:
@@ -42,7 +43,7 @@ if os.path.exists(inputCsv):
             print(f"No such parameter {f2}!")
             exit()
 
-        # to speed up the calculations let's make up a shorter array of dicts {id : [f1, f2]}
+        # to speed up the calculations let's make up a shorter array of dicts
         shortArr = []
         for row in csvReader:
             f1Float = float(row[f1])
@@ -51,13 +52,12 @@ if os.path.exists(inputCsv):
                 if f2Float >= f2Low and f2Float <= f2High:
                     shortArr.append({"id": row["id"], f1: f1Float, f2: f2Float})
 else:
-    print("No such file you dumbass! ")
+    print("No such file! ")
     exit()
 
 # Do we need it?
 f1Arr = [d[f1] for d in shortArr]
 f2Arr = [d[f1] for d in shortArr]
-
 f1Arr.sort()
 f2Arr.sort()
 
@@ -67,22 +67,23 @@ hist1, bins1 = np.histogram(f1Arr, bins=binsNum)
 # pairs of left-right boundaries for each bin
 pairs1 = zip(bins1, bins1[1:])
 for i, bin in enumerate(pairs1):
-    # array of second factor values
+    # array of proteins within that bin - clear every time
     proteinsFromBin = []
-    # take binsNum from each bin -> total number will be binsNum**2
+    # take binsNum from each bin -> total number will be binsNum**2 (WHY NOT??)
     for protein in shortArr:
-        # for all proteins within the bin build histogram and take 1 sample from each bin of the new distribution
         if (protein[f1] >= bin[0]) and (protein[f1] < bin[1]):
             proteinsFromBin.append(protein)
 
+    # for all proteins within the bin build histogram and take 1 sample from each bin of the new distribution
     hist2, bins2 = np.histogram([d[f2] for d in proteinsFromBin], bins=binsNum)
     pairs2 = zip(bins2, bins2[1:])
     print(f"{i} bin has {len(proteinsFromBin)} proteins")
-    for j, bin2 in enumerate(pairs2):
-        for protein2 in proteinsFromBin:
-            if (protein2[f2] >= bin2[0]) and (protein2[f2] < bin2[1]) and (j < 1):
+    for bin2 in pairs2:
+        for j, protein2 in enumerate(proteinsFromBin):
+            if (protein2[f2] >= bin2[0]) and (protein2[f2] < bin2[1]) and (j == 0):
                 finalList.append(protein2)
-                # print(f"One protein added to finalList...")
+                # DEBUG
+                #print(f"bin1: {i}        bin2: {j}")
 
 print(f"{len(finalList)} files is written to {outputCsv}")
 
