@@ -15,37 +15,38 @@ from keras.models import model_from_json
 import saxsdocument
 import numpy as np
 import os
+import json
 
 jsonFilename  = args.architecture
 h5Filename    = args.weights
 inputFolder   = args.dataPath
 outCsvPath    = args.output
 firstPointIndex = int(args.first) - 1
-
-
-outputLength  = 302 # p(r) points
+stdpddf       = 1.0
 
 try:
     # load json and create model
     jsonFile = open(jsonFilename, 'r')
     loadedModelJson = jsonFile.read()
+    json_data = json.loads(loadedModelJson)
+    if('Normalization coefficient' in json_data):
+        stdpddf = (float)(json_data['Normalization coefficient'])
     jsonFile.close()
     loadedModel = model_from_json(loadedModelJson)
     # load weights into new model
     loadedModel.load_weights(h5Filename)
     inputLength = loadedModel.input_shape[1]  # I(s) points
+    print("Expected input: " + str(inputLength) + " points.")
+    #outputLength = loadedModel.output_shape[1]  # p(r) points
 
-    if firstPointIndex >= inputLength:
-        print("--first should be less than " + str(inputLength))
-        exit()
 
-    if int(args.last) == -1:
-        lastPointIndex = inputLength
-    elif int(args.last) > inputLength:
-        print("--last should be less than " + str(inputLength))
-        exit()
-    else:
-        lastPointIndex = int(args.last)
+#    if int(args.last) == -1:
+#        lastPointIndex = inputLength
+#    else:
+#        lastPointIndex = int(args.last)
+
+    #FIXME
+    lastPointIndex = int(args.last) # DEBUG
     print("Model loaded. Yeah!")
 except Exception as e:
     print("Error: Oops, model can not be uploaded.")
@@ -61,38 +62,31 @@ for inputFilename in os.listdir(inputFolder):
         s  = dat[0][firstPointIndex:lastPointIndex]
         Is = dat[1][firstPointIndex:lastPointIndex]
         if len(Is) != lastPointIndex - firstPointIndex:
+            print(inputFilename + " length is wrong.")
             continue
     except:
         print("Error: Could not read input data")
-
-
-    # Assume Smin is correct; fill up to required Smax with typical I(0.4) intensity (assuming I(0) = 1.0)
-    #if(len(Is) > inputLength): print("Too many points in the data: " + str(len(Is)) + "points")
-    #zeroes = np.full((inputLength - len(Is)), Is[-1])
-    #IsExtended = np.concatenate((Is, zeroes))
-
-
-    # evaluate loaded model on test data
-    #loaded_model.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
-    #score = loaded_model.evaluate(np.array(Is, np.array(PDDF[0:n_cases]),verbose=0)
-    #print("%s: %.2f%%" % (loaded_model.metrics_names[1], score[1]*100))
-    r = np.arange(0.0, outputLength, 1.0)
 
     #test = np.array([IsExtended, ])
     test = np.array([Is, ])
     pred = loadedModel.predict(test)
 
-    #TODO: multiply by p(r) normalization coefficient
-    if len(pred[0]) == outputLength:
-        point = len(pred[0])
-        r = r[:point]
-        pred = pred[:,:point]
-        pred[:,-1] = 0
-        pddfPredicted = np.vstack((r, pred))
-        np.savetxt('pddf-predicted.dat', np.transpose(pddfPredicted), fmt = "%.8e")
-        print('pddf-predicted.dat is written to the disk...')
+    #TODO: instead of checking output number of points > 10 read model type (scalar/pddf)
+    if len(pred[0]) > 10:
+        # Find Dmax: first negative point after max(p(r))
+        max_pddf = np.argmax(pred)
+        negIndex = np.argmax(pred[:,max_pddf:] < 0)
+        # Crop p(r > Dmax), nullify last point
+        pred = pred[:, 0: (negIndex + max_pddf + 1)]
+        pred[:,-1] = 0.0
 
-    elif len(pred[0]) < 10:
+        r = np.arange(0.0, len(pred[0]) * 0.25, 0.25)
+        outCsv.append(inputFilename + ', ' + str(round(r[-1], 3)))
+        # print(f"{len(r)} - {len(pred[0])} - {r[-1]}") # DEBUG
+        pddf_predicted = np.vstack((r, stdpddf * pred[0]))
+        np.savetxt('pddf-' + inputFilename, np.transpose(pddf_predicted), fmt = "%.8e")
+
+    else:
         for number in pred[0]:
             outCsv.append(inputFilename + ', ' + str(round(number, 3)))
 
