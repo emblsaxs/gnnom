@@ -6,7 +6,7 @@ parser.add_argument('architecture',  metavar='json',   type=str, help='path to t
 parser.add_argument('weights', metavar='h5',   type=str, help='path to the hdf5 file with weights')
 parser.add_argument('dataPath',   metavar='path', type=str, help='path to the folder with data')
 parser.add_argument('--first', type=int, default=1,  help='index of the first point to use (default: 1)')
-parser.add_argument('--last',  type=int, default=-1, help='index of the last point to use (default: use all)')
+parser.add_argument('--last', help='index of the last point to use (default: use all)')
 parser.add_argument('-o', '--output', type=str, default="", help='save output in CSV format')
 
 args = parser.parse_args()
@@ -45,8 +45,6 @@ try:
 #    else:
 #        lastPointIndex = int(args.last)
 
-    #FIXME
-    lastPointIndex = int(args.last) # DEBUG
     print("Model loaded. Yeah!")
 except Exception as e:
     print("Error: Oops, model can not be uploaded.")
@@ -54,18 +52,20 @@ except Exception as e:
     exit()
 
 # output csv
+if args.last is not None: args.last = (int)(args.last)
 outCsv = []
 for inputFilename in os.listdir(inputFolder):
     try:
         doc  = saxsdocument.read(os.path.join(inputFolder, inputFilename))
         dat  = np.transpose(np.array(doc.curve[0]))
-        s  = dat[0][firstPointIndex:lastPointIndex]
-        Is = dat[1][firstPointIndex:lastPointIndex]
-        if len(Is) != lastPointIndex - firstPointIndex:
-            print(inputFilename + " length is wrong.")
+        s  = dat[0][firstPointIndex:args.last]
+        Is = dat[1][firstPointIndex:args.last]
+        if (args.last is not None) and (len(Is) != args.last - firstPointIndex):
+            print(f"{inputFilename} length is wrong. Expected: {inputLength}; Received: {len(Is)}.")
             continue
-    except:
+    except Exception as e:
         print("Error: Could not read input data")
+        print(e)
 
     #test = np.array([IsExtended, ])
     test = np.array([Is, ])
