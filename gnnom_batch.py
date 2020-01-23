@@ -7,6 +7,7 @@ parser.add_argument('weights', metavar='h5',   type=str, help='path to the hdf5 
 parser.add_argument('dataPath',   metavar='path', type=str, help='path to the folder with data')
 parser.add_argument('--first', type=int, default=1,  help='index of the first point to use (default: 1)')
 parser.add_argument('--last',  type=int, default=-1, help='index of the last point to use (default: use all)')
+parser.add_argument('--smax',  type=float, default=0.0, help='Smax')
 parser.add_argument('-o', '--output', type=str, default="", help='save output in CSV format')
 
 args = parser.parse_args()
@@ -53,21 +54,42 @@ except Exception as e:
     print(e)
     exit()
 
+Rg = 20.0 # Angstroms
+
 # output csv
 outCsv = []
 for inputFilename in os.listdir(inputFolder):
     try:
+        print(inputFilename)
         doc  = saxsdocument.read(os.path.join(inputFolder, inputFilename))
         dat  = np.transpose(np.array(doc.curve[0]))
         s  = dat[0][firstPointIndex:lastPointIndex]
         Is = dat[1][firstPointIndex:lastPointIndex]
-        if len(Is) != lastPointIndex - firstPointIndex:
-            print(inputFilename + " length is wrong.")
-            continue
     except:
         print("Error: Could not read input data")
+        continue
 
-    #test = np.array([IsExtended, ])
+    if args.smax > 0:
+        if s[-1] < args.smax:
+            print(f"{inputFilename} Smax is less than {args.smax}.")
+            continue
+    elif len(Is) != lastPointIndex - firstPointIndex:
+        print(inputFilename + " length is wrong.")
+        continue
+    if s[0] != 0:
+        # sew missing head
+        step = s[1] - s[0]
+        # find number of missing points
+
+        head_number = (int)(np.rint((s[0] )/step))
+        ss = 0.0
+        Is_head = np.full(head_number, 0.0)
+        for i in range(head_number):
+            Is_head[i] = np.exp(ss*ss*Rg*Rg/-3.0)
+            ss += step
+        Is = np.hstack((Is_head, Is))
+
+
     test = np.array([Is, ])
     pred = loadedModel.predict(test)
 
@@ -84,7 +106,7 @@ for inputFilename in os.listdir(inputFolder):
         outCsv.append(inputFilename + ', ' + str(round(r[-1], 3)))
         # print(f"{len(r)} - {len(pred[0])} - {r[-1]}") # DEBUG
         pddf_predicted = np.vstack((r, stdpddf * pred[0]))
-        np.savetxt('pddf-' + inputFilename, np.transpose(pddf_predicted), fmt = "%.8e")
+        np.savetxt(inputFilename, np.transpose(pddf_predicted), fmt = "%.8e")
 
     else:
         for number in pred[0]:
