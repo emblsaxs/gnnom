@@ -54,16 +54,16 @@ firstPointIndex = int(args.first) - 1
 path = os.path.join(args.dataPath, dataFiles[0])
 doc  = saxsdocument.read(path)
 dat  = np.array(doc.curve[0])
-lastPointIndex = len(dat)
 
+lastPointIndex = len(dat)
 if(int(args.last) > lastPointIndex):
     print(f"--last must be less or equal to the number of points in data files: {lastPointIndex}")
     exit()
-
 if(args.last != -1):
     lastPointIndex = int(args.last)
 
-    
+smin = dat[firstPointIndex][0]
+smax = dat[lastPointIndex - 1][0]
 
 for file in dataFiles:
     path = os.path.join(args.dataPath, file)
@@ -99,6 +99,7 @@ pddf = pddf / stdpddf
 # Number of points in a SAXS curve
 input_length  = np.shape(Is)[1]
 
+#FIXME: read output_length from training pddf data
 # Number of points in a p(r)
 output_length = 401
 
@@ -153,6 +154,10 @@ np.savetxt('loss-' + model_name + '.int', np.transpose(np.vstack((np.arange(num_
 model_str = model.to_json()
 model_json = json.loads(model_str)
 model_json['Normalization coefficient'] = stdpddf
+model_json['smin'] = smin
+model_json['smax'] = smax
+model_json['firstPointIndex'] = firstPointIndex  # including, starts from 0
+model_json['lastPointIndex']  = lastPointIndex   # excluding
 
 with open(model_name + ".json", "w") as json_file:
     json_file.write(json.dumps(model_json))
