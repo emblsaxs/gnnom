@@ -3,18 +3,18 @@ import argparse
 
 parser = argparse.ArgumentParser(description='Uniformly selects distribution over two factors from a CSV file. '
                                              'Note: the file must contain id column')
-parser.add_argument('csv', metavar='csv', type=str, help='path to the csv file')
-parser.add_argument('f1', metavar='f1', type=str, help='first factor to distribute over')
-parser.add_argument('f1Low', metavar='f1Low', type=float, help='low boundary for f1 factor')
-parser.add_argument('f1High', metavar='f1High', type=float, help='higher boundary for f1 factor')
-parser.add_argument('f2', metavar='f2', type=str, help='second factor to distribute over')
-parser.add_argument('f2Low', metavar='f2Low', type=float, help='low boundary for f2 factor')
-parser.add_argument('f2High', metavar='f2High', type=float, help='higher boundary for f2 factor')
-parser.add_argument('num1', metavar='num1', type=int, help='number of bins')
-parser.add_argument('num2', metavar='num2', type=int, help='number of proteins from each bin')
-parser.add_argument('--type', metavar='type', type=str, default="p", help='p -only proteins / n - only DNA/RNA')
+parser.add_argument('csv', metavar='csv'         , type=str  , help='path to the csv file')
+parser.add_argument('f1', metavar='f1'           , type=str  , help='first factor to distribute over')
+parser.add_argument('f1Low', metavar='f1Low'     , type=float, help='low boundary for f1 factor')
+parser.add_argument('f1High', metavar='f1High'   , type=float, help='higher boundary for f1 factor')
+parser.add_argument('f2', metavar='f2'           , type=str  , help='second factor to distribute over')
+parser.add_argument('f2Low', metavar='f2Low'     , type=float, help='low boundary for f2 factor')
+parser.add_argument('f2High', metavar='f2High'   , type=float, help='higher boundary for f2 factor')
+parser.add_argument('num1', metavar='num1'       , type=int  , help='number of bins')
+parser.add_argument('num2', metavar='num2'       , type=int  , help='number of proteins from each bin')
+parser.add_argument('--type', metavar='type'     , type=str  , default="p", help='p -only proteins / n - only DNA/RNA')
 
-parser.add_argument('-o', '--output', type=str, default="", help='save output in CSV format')
+parser.add_argument('--output', '-o', metavar= 'output', type=str, default="", help='save output in CSV format')
 
 args = parser.parse_args()
 
@@ -23,17 +23,19 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 
-inputCsv = args.csv
-f1 = args.f1
-f1Low = args.f1Low
-f1High = args.f1High
-f2 = args.f2
-f2Low = args.f2Low
-f2High = args.f2High
-binsNum = args.num1
+#store to local variables
+inputCsv   = args.csv
+f1         = args.f1
+f1Low      = args.f1Low
+f1High     = args.f1High
+f2         = args.f2
+f2Low      = args.f2Low
+f2High     = args.f2High
+binsNum    = args.num1
 numFromBin = args.num2
-typeP = args.type
+typeP      = args.type
 
+outputCsv  = args.output
 # by default takes only proteins!
 if typeP == "n":
     v = 0
@@ -41,7 +43,7 @@ else:
     v = 1
 
 print(f"Number of bins in each distribution is {binsNum}")
-outputCsv = args.output
+
 if os.path.exists(inputCsv):
     with open(inputCsv) as csvFile:
         csvReader = csv.DictReader(csvFile, delimiter=',')
@@ -71,42 +73,52 @@ f1Arr.sort()
 f2Arr.sort()
 
 finalList = []
+
 # compute histograms
 hist1, bins1 = np.histogram(f1Arr, bins=binsNum)
+
 # pairs of left-right boundaries for each bin
 pairs1 = zip(bins1, bins1[1:])
 for i, bin in enumerate(pairs1):
-    # array of proteins within that bin - clear every time
+    # array of proteins within that bin - clear for each bin
     proteinsFromBin = []
+
     # take binsNum from each bin -> total number will be binsNum**2 (WHY NOT??)
     for protein in shortArr:
         if (protein[f1] >= bin[0]) and (protein[f1] < bin[1]):
             proteinsFromBin.append(protein)
 
-    # for all proteins within the bin build histogram and take 1 sample from each bin of the new distribution
+    # for all proteins within the bin build histogram and take numFromBin entries from each bin of the new distribution
     hist2, bins2 = np.histogram([d[f2] for d in proteinsFromBin], bins=binsNum)
     pairs2 = zip(bins2, bins2[1:])
     print(f"{i} bin has {len(proteinsFromBin)} proteins")
     for bin2 in pairs2:
         for j, protein2 in enumerate(proteinsFromBin):
-            if (protein2[f2] >= bin2[0]) and (protein2[f2] < bin2[1]) and (j <= numFromBin):
+            if (protein2[f2] >= bin2[0]) and (protein2[f2] < bin2[1]) and (j < numFromBin):
                 finalList.append(protein2)
                 # DEBUG
                 #print(f"bin1: {i}        bin2: {j}")
 
-print(f"{len(finalList)} files is written to {outputCsv}")
+
 
 # cdf = hist1.cumsum()
 # cdf_normalized = cdf * hist1.max()/ cdf.max()
 # plt.plot(cdf_normalized, color = 'b')
 
-# write output csv
-with open(outputCsv, mode='w') as outfile:
-    writer = csv.writer(outfile, delimiter=',', quoting=csv.QUOTE_NONE)
-    writer.writerow(['id'] + [f1] + [f2])
-    for protein in finalList:
+# write output csv if exists
+if outputCsv != "":
+    with open(outputCsv, mode='w') as outfile:
+        writer = csv.writer(outfile, delimiter=',', quoting=csv.QUOTE_NONE)
+        writer.writerow(['id'] + [f1] + [f2])
+        for protein in finalList:
         # s = f"{protein['id']}, {protein[f1]}, {protein[f2]}"
-        writer.writerow([protein['id']] + [protein[f1]] + [protein[f2]])
+            writer.writerow([protein['id']] + [protein[f1]] + [protein[f2]])
+
+    print(f"{len(finalList)} files is written to {outputCsv}")
+else:
+    print(f"id,{f1},{f2}")
+    for protein in finalList:
+        print(f"{protein['id']},{protein[f1]},{protein[f2]}")
 
 # Do we need it?
 f3Arr = [d[f1] for d in finalList]
