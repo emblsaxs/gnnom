@@ -22,6 +22,7 @@ import csv
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+import random
 
 #store to local variables
 inputCsv   = args.csv
@@ -92,6 +93,8 @@ for i, bin in enumerate(pairs1):
     hist2, bins2 = np.histogram([d[f2] for d in proteinsFromBin], bins=binsNum)
     pairs2 = zip(bins2, bins2[1:])
     print(f"{i} bin has {len(proteinsFromBin)} proteins")
+    # reshuffle proteins from the bin!
+    random.shuffle(proteinsFromBin)
     for bin2 in pairs2:
         for j, protein2 in enumerate(proteinsFromBin):
             if (protein2[f2] >= bin2[0]) and (protein2[f2] < bin2[1]) and (j < numFromBin):
