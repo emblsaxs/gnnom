@@ -10,8 +10,8 @@ parser.add_argument('f1High', metavar='f1High'   , type=float, help='higher boun
 parser.add_argument('f2', metavar='f2'           , type=str  , help='second factor to distribute over')
 parser.add_argument('f2Low', metavar='f2Low'     , type=float, help='low boundary for f2 factor')
 parser.add_argument('f2High', metavar='f2High'   , type=float, help='higher boundary for f2 factor')
-parser.add_argument('num1', metavar='num1'       , type=int  , help='number of bins')
-parser.add_argument('num2', metavar='num2'       , type=int  , help='number of proteins from each bin')
+parser.add_argument('num1', metavar='num1'       , type=int  , help='number of bins by f1')
+parser.add_argument('num2', metavar='num2'       , type=int  , help='number of bins by f2')
 parser.add_argument('--type', metavar='type'     , type=str  , default="p", help='p -only proteins / n - only DNA/RNA')
 
 parser.add_argument('--output', '-o', metavar= 'output', type=str, default="", help='save output in CSV format')
@@ -32,8 +32,8 @@ f1High     = args.f1High
 f2         = args.f2
 f2Low      = args.f2Low
 f2High     = args.f2High
-binsNum    = args.num1
-numFromBin = args.num2
+binsNum1   = args.num1
+binsNum2   = args.num2
 typeP      = args.type
 
 outputCsv  = args.output
@@ -42,8 +42,6 @@ if typeP == "n":
     v = 0
 else:
     v = 1
-
-print(f"Number of bins in each distribution is {binsNum}")
 
 if os.path.exists(inputCsv):
     with open(inputCsv) as csvFile:
@@ -76,29 +74,30 @@ f2Arr.sort()
 finalList = []
 
 # compute histograms
-hist1, bins1 = np.histogram(f1Arr, bins=binsNum)
+hist1, bins1 = np.histogram(f1Arr, bins=binsNum1)
 
 # pairs of left-right boundaries for each bin
 pairs1 = zip(bins1, bins1[1:])
-for i, bin in enumerate(pairs1):
+for bin in pairs1:
     # array of proteins within that bin - clear for each bin
     proteinsFromBin = []
-
     # take binsNum from each bin -> total number will be binsNum**2 (WHY NOT??)
     for protein in shortArr:
         if (protein[f1] >= bin[0]) and (protein[f1] < bin[1]):
             proteinsFromBin.append(protein)
 
-    # for all proteins within the bin build histogram and take numFromBin entries from each bin of the new distribution
-    hist2, bins2 = np.histogram([d[f2] for d in proteinsFromBin], bins=binsNum)
-    pairs2 = zip(bins2, bins2[1:])
-    print(f"{i} bin has {len(proteinsFromBin)} proteins")
+    print(f"{f1}:{round(bin[0],2)}-{round(bin[1],2)} bin has {len(proteinsFromBin)} entries")
     # reshuffle proteins from the bin!
     random.shuffle(proteinsFromBin)
+    # for all proteins within the bin build histogram and take numFromBin entries from each bin of the new distribution
+    hist2, bins2 = np.histogram([d[f2] for d in proteinsFromBin], bins=binsNum2)
+    pairs2 = zip(bins2, bins2[1:])
+
     for bin2 in pairs2:
-        for j, protein2 in enumerate(proteinsFromBin):
-            if (protein2[f2] >= bin2[0]) and (protein2[f2] < bin2[1]) and (j < numFromBin):
+        for protein2 in proteinsFromBin:
+            if (protein2[f2] >= bin2[0]) and (protein2[f2] < bin2[1]):
                 finalList.append(protein2)
+                break
                 # DEBUG
                 #print(f"bin1: {i}        bin2: {j}")
 
@@ -132,20 +131,20 @@ f4Arr.sort()
 
 # plot histograms
 fig, ax = plt.subplots(2, 2, tight_layout=True)
-ax[0, 0].hist(f1Arr, edgecolor='black', bins=binsNum, facecolor='b', alpha=0.5)
-ax[0, 0].set_xticks(np.linspace(min(f1Arr), max(f1Arr), 10))
+ax[0, 0].hist(f1Arr, edgecolor='black', bins=binsNum1, facecolor='b', alpha=0.5)
+ax[0, 0].set_xticks(np.linspace(min(f1Arr), max(f1Arr), binsNum1+1))
 ax[0, 0].legend([f"{f1} all"], loc="upper right")
 
-ax[1, 0].hist(f2Arr, edgecolor='black', bins=binsNum, facecolor='g', alpha=0.5)
-ax[1, 0].set_xticks(np.linspace(min(f2Arr), max(f2Arr), 10))
+ax[1, 0].hist(f2Arr, edgecolor='black', bins=binsNum2, facecolor='g', alpha=0.5)
+ax[1, 0].set_xticks(np.linspace(min(f2Arr), max(f2Arr), binsNum2+1))
 ax[1, 0].legend([f"{f2} all"], loc="upper right")
 
-ax[0, 1].hist(f3Arr, edgecolor='black', bins=binsNum, facecolor='b', alpha=0.5)
-ax[0, 1].set_xticks(np.linspace(min(f3Arr), max(f3Arr), 10))
+ax[0, 1].hist(f3Arr, edgecolor='black', bins=binsNum1, facecolor='b', alpha=0.5)
+ax[0, 1].set_xticks(np.linspace(min(f3Arr), max(f3Arr), binsNum1+1))
 ax[0, 1].legend([f"{f1} selected"], loc="upper right")
 
-ax[1, 1].hist(f4Arr, edgecolor='black', bins=binsNum, facecolor='g', alpha=0.5)
-ax[1, 1].set_xticks(np.linspace(min(f4Arr), max(f4Arr), 10))
+ax[1, 1].hist(f4Arr, edgecolor='black', bins=binsNum2, facecolor='g', alpha=0.5)
+ax[1, 1].set_xticks(np.linspace(min(f4Arr), max(f4Arr), binsNum2+1))
 ax[1, 1].legend([f"{f2} selected"], loc="upper right")
 
 plt.show()
