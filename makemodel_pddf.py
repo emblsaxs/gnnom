@@ -7,9 +7,11 @@ parser = argparse.ArgumentParser(description='Make NN model - arguments and opti
 parser.add_argument('dataPath', metavar='data',   type=str, help='path to the training data folder')
 parser.add_argument('pddfPath', metavar='pddf',   type=str, help='path to the training pddf folder')
 parser.add_argument('epochs',   metavar='epochs', type=int, help='number of epochs')
-parser.add_argument('--units', type=int, default=40, help='number of units in the hidden layer (default: 40)')
+parser.add_argument('--units', type=int, default=80, help='number of units in the hidden layer (default: 40)')
 parser.add_argument('--first', type=int, default=1,  help='index of the first point to use (default: 1)')
 parser.add_argument('--last',  type=int, default=-1, help='index of the last point to use (default: use all)')
+parser.add_argument('--valData',   type=str, help='path to the validation data folder')
+parser.add_argument('--valPddf',   type=str, help='path to the validation pddf folder')
 
 args = parser.parse_args()
 
@@ -30,28 +32,12 @@ import matplotlib.pyplot as plt
 
 num_epochs = int(args.epochs)
 
-# Make sure there are no subfolders!
-dataFiles = os.listdir(args.dataPath)
-pddfFiles = os.listdir(args.pddfPath)
-
-dataFiles.sort()
-pddfFiles.sort()
-
-print(f"Number of data files found: {len(dataFiles)}")
-print(f"Number of pddf files found: {len(pddfFiles)}")
-
-n_all   = len(dataFiles)
-n_cases = int(n_all * 0.9)
-
-print("Reading data files...")
-
-Is = []
-
 
 # Process --first and --last:
 firstPointIndex = int(args.first) - 1
 
-path = os.path.join(args.dataPath, dataFiles[0])
+file = os.listdir(args.dataPath)[0]
+path = os.path.join(args.dataPath, file)
 doc  = saxsdocument.read(path)
 dat  = np.array(doc.curve[0])
 
@@ -65,33 +51,48 @@ if(args.last != -1):
 smin = dat[firstPointIndex][0]
 smax = dat[lastPointIndex - 1][0]
 
-for file in dataFiles:
-    path = os.path.join(args.dataPath, file)
-    doc  = saxsdocument.read(path)
-    dat  = np.transpose(np.array(doc.curve[0]))
-    Is.append(dat[1][firstPointIndex:lastPointIndex])
+def readFiles(path, isPddf = False, firstPointIndex = 0, lastPointIndex = None):
+    # Make sure there are no subfolders!
+    files = os.listdir(path)
+    files.sort()
+    arr = []
+    for f in files:
+        p = os.path.join(path, f)
+        #print(p)
+        doc  = saxsdocument.read(p)
+        dat  = np.transpose(np.array(doc.curve[0]))[1]
+        if isPddf:
+            # Nullify all points after the first p(r) < 0
+            negIndex = np.argmax(dat < 0)
+            dat[negIndex:] = 0.0
+            arr.append(dat)
+        else:
+            arr.append(dat[firstPointIndex:lastPointIndex])
+    return np.array(arr)
 
-print("...done.")
+Is   = readFiles(args.dataPath, False, firstPointIndex, lastPointIndex)
+pddf = readFiles(args.pddfPath, True)
 
-
-print("Reading pddf files...")
-pddf = []
-
-for file in pddfFiles:
-    path = os.path.join(args.pddfPath, file)
-    doc  = saxsdocument.read(path)
-    dat  = np.transpose(np.array(doc.curve[0]))[1]
-    # Nullify all points after the first p(r) < 0
-    negIndex = np.argmax(dat < 0)
-    dat[negIndex:] = 0.0
-    pddf.append(dat)
-
-print("...done.")
-
+n_all = len(Is)
 # NB: without p(r) normalization the result is much worse
 # Normalize PDDF: divide by stdev:
 stdpddf  = np.std(pddf)
 pddf = pddf / stdpddf
+
+if args.valData and args.valPddf:
+    
+    IsVal   = readFiles(args.valData, False, firstPointIndex, lastPointIndex)
+    pddfVal = readFiles(args.valPddf, True)
+    # NB: without p(r) normalization the result is much worse
+    # Normalize PDDF: divide by stdev:
+    pddfVal = pddfVal / stdpddf
+
+else:
+    n_cases = int(n_all * 0.9)
+    IsVal   = np.array(Is[n_cases:n_all]) 
+    pddfVal = np.array(pddf[n_cases:n_all])
+    Is      = np.array(Is[0:n_cases])
+    pddf    = np.array(pddf[0:n_cases])
 
 
 #tensorboard = keras.callbacks.TensorBoard(log_dir='./Graph', histogram_freq=0, write_graph=True, write_images=True)
@@ -101,7 +102,7 @@ input_length  = np.shape(Is)[1]
 
 #FIXME: read output_length from training pddf data
 # Number of points in a p(r)
-output_length = 401
+output_length = 1201
 
 model = Sequential()
 
@@ -120,8 +121,9 @@ model.compile(optimizer='adam', loss='mse')
 
 model_name = "gnnom-i0-pddf-e" + str(args.epochs) + "-u" + str(args.units) + "-l2"
 
-train_history = model.fit(np.array(Is[0:n_cases]), np.array(pddf[0:n_cases]), epochs=num_epochs,  batch_size=32,
-                          validation_data =  (np.array(Is[n_cases:n_all]), np.array(pddf[n_cases:n_all])),
+
+train_history = model.fit(np.array(Is), np.array(pddf), epochs=num_epochs,  batch_size=32,
+                          validation_data =  (IsVal, pddfVal),
                           callbacks = [ModelCheckpoint(model_name + '.h5', save_best_only=True)])
 
 
