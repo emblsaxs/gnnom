@@ -12,6 +12,7 @@ parser.add_argument('--first',   type=int, default= 1, help='index of the first 
 parser.add_argument('--last',    type=int, default=-1, help='index of the last point to use (default: use all)')
 parser.add_argument('--valData', type=str, help='path to the validation data folder')
 parser.add_argument('--valPddf', type=str, help='path to the validation pddf folder')
+parser.add_argument('-p', '--prefix', type=str, default='', help='prefix for the output file names')
 
 args = parser.parse_args()
 
@@ -53,6 +54,7 @@ def readFiles(path, isPddf = False, firstPointIndex = 0, lastPointIndex = None):
 # Process --first and --last:
 firstPointIndex = int(args.first) - 1
 
+# Read first I(s) file to get number of points
 file = os.listdir(args.dataPath)[0]
 path = os.path.join(args.dataPath, file)
 doc  = saxsdocument.read(path)
@@ -68,7 +70,14 @@ if(args.last != -1):
 smin = dat[firstPointIndex][0]
 smax = dat[lastPointIndex - 1][0]
 
+#read first pddf file to get number of points
+file          = os.listdir(args.pddfPath)[0]
+path          = os.path.join(args.pddfPath, file)
+doc           = saxsdocument.read(path)
+dat           = doc.curve[0]
+output_length = len(dat)
 
+#read training set files
 Is   = readFiles(args.dataPath, False, firstPointIndex, lastPointIndex)
 pddf = readFiles(args.pddfPath, True)
 
@@ -78,7 +87,7 @@ n_all = len(Is)
 stdpddf  = np.std(pddf)
 pddf = pddf / stdpddf
 
-
+#create validation set
 if args.valData and args.valPddf:
     IsVal   = readFiles(args.valData, False, firstPointIndex, lastPointIndex)
     pddfVal = readFiles(args.valPddf, True)
@@ -96,7 +105,7 @@ else:
 if args.epochs:
     num_epochs = int(args.epochs)
 else:
-    num_epochs = int(1000000.0 / len(Is))
+    num_epochs = int(10000000.0 / len(Is))
 
 
 
@@ -104,10 +113,6 @@ else:
 
 # Number of points in a SAXS curve
 input_length  = np.shape(Is)[1]
-
-#FIXME: read output_length from training pddf data
-# Number of points in a p(r)
-output_length = 401
 
 model = Sequential()
 
@@ -124,8 +129,7 @@ model.add(Dense(output_length))
 
 model.compile(optimizer='adam', loss='mse')
 
-model_name = "gnnom-i0-pddf-e" + str(args.epochs) + "-u" + str(args.units) + "-l1"
-
+model_name = f"gnnom-i0-pddf-{args.prefix}-e{num_epochs}-u{args.units}-l1"
 
 train_history = model.fit(Is, pddf, epochs=num_epochs,  batch_size=32,
                           validation_data =  (IsVal, pddfVal),
