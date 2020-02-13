@@ -7,6 +7,7 @@ parser = argparse.ArgumentParser(description='Make NN model - arguments and opti
 parser.add_argument('dataPath', metavar='data', type=str, help='path to the training data folder')
 parser.add_argument('pddfPath', metavar='pddf', type=str, help='path to the training pddf folder')
 parser.add_argument('--epochs', default=None,   type=int, help='number of epochs')
+parser.add_argument('--layers', default=1,      type=int, help='number of hidden layers')
 parser.add_argument('--units',  default=80,     type=int, help='number of units in the hidden layer (default: 40)')
 parser.add_argument('--first',   type=int, default= 1, help='index of the first point to use (default: 1)')
 parser.add_argument('--last',    type=int, default=-1, help='index of the last point to use (default: use all)')
@@ -105,7 +106,7 @@ else:
 if args.epochs:
     num_epochs = int(args.epochs)
 else:
-    num_epochs = int(10000000.0 / len(Is))
+    num_epochs = int(20000000.0 / len(Is))
 
 
 
@@ -120,16 +121,17 @@ model = Sequential()
 model.add(Dense(args.units, input_dim=input_length, use_bias=True, kernel_initializer='he_uniform', bias_initializer='zeros'))
 model.add(Activation('relu'))
 
-# second layer
-#model.add(Dense(args.units, use_bias=True, kernel_initializer='he_uniform', bias_initializer='zeros'))
-#model.add(Activation('relu'))
+for layer in range(args.layers - 1):
+   # add layer
+   model.add(Dense(args.units, use_bias=True, kernel_initializer='he_uniform', bias_initializer='zeros'))
+   model.add(Activation('relu'))
 
 # output layer
 model.add(Dense(output_length))
 
 model.compile(optimizer='adam', loss='mse')
 
-model_name = f"gnnom-i0-pddf-{args.prefix}-e{num_epochs}-u{args.units}-l1"
+model_name = f"gnnom-i0-pddf-{args.prefix}-e{num_epochs}-u{args.units}-l{args.layers}"
 
 train_history = model.fit(Is, pddf, epochs=num_epochs,  batch_size=32,
                           validation_data =  (IsVal, pddfVal),
