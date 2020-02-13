@@ -22,19 +22,19 @@ scale         = args.scale
 
 for inputFilename in os.listdir(inputFolder):
     try:
-        mul = np.random.normal(1.0, scale, 1)
-        add = np.random.normal(0.0, bckgrd, 1)
+        mul = np.random.normal(1.0, scale)
+        add = np.random.normal(0.0, bckgrd)
         doc   = saxsdocument.read(os.path.join(inputFolder, inputFilename))
         dat   = np.transpose(np.array(doc.curve[0]))
         s    = dat[0]
         Is   = dat[1]
         err  = dat[2]
         nrd = np.random.normal(0.0, noise, len(Is))
+        nrd[-1] = 0
         errm = np.sqrt((err*mul)**2 + (noise*mul)**2)
         Ism  = (Is + nrd + add) * mul
         out  = np.vstack((s,Ism, errm))
         outPath = (prefix + inputFilename)
-        np.savetxt( outPath, np.transpose(out), fmt = "%.8e")
-        print(outPath + ': is written to the disk...')
+        np.savetxt( outPath, np.transpose(out), footer = f"noise: {noise}\nbackground: {add}\nscale:{mul}", fmt = "%.8e")
     except Exception as e:
         print(e)
