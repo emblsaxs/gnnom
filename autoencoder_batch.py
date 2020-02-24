@@ -56,7 +56,7 @@ for inputFilename in os.listdir(inputFolder):
         doc  = saxsdocument.read(os.path.join(inputFolder, inputFilename))
         dat  = np.transpose(np.array(doc.curve[0]))
         s  = dat[0]
-        Is = dat[1] * s**(degree)
+        Is = dat[1]
 
     except Exception as e:
         print(f"Error: Could not read {inputFilename}:")
@@ -89,8 +89,9 @@ for inputFilename in os.listdir(inputFolder):
         print(f"{inputFilename}: point {lastPointIndex - 1} has s={s[lastPointIndex]}, expected s={smax}")
         exit()
 
+    Is = Is * s**(degree)
     test = np.array([Is[firstPointIndex:lastPointIndex], ])
     pred = loadedModel.predict(test)
-    dat_decoded = np.vstack((s, pred[0] / s**(degree)))
+    dat_decoded = np.vstack((s[firstPointIndex:lastPointIndex], pred[0] / s[firstPointIndex:lastPointIndex]**(degree)))
     dat_decoded[1][0] = 1.0  # Make I(0) = 1.0
     np.savetxt(inputFilename, np.transpose(dat_decoded), fmt = "%.8e")
