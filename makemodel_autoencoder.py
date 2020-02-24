@@ -34,6 +34,7 @@ import matplotlib.pyplot as plt
 
 
 def readFiles(path, firstPointIndex = 0, lastPointIndex = None, degree = 0):
+    Rg = 20.0
     # Make sure there are no subfolders!
     files = os.listdir(path)
     files.sort()
@@ -42,8 +43,22 @@ def readFiles(path, firstPointIndex = 0, lastPointIndex = None, degree = 0):
         p = os.path.join(path, f)
         doc  = saxsdocument.read(p)
         s    = np.transpose(doc.curve[0])[0]
-        dat  = np.transpose(doc.curve[0])[1]
-        arr.append(dat[firstPointIndex:lastPointIndex]*s**(degree))
+        Is   = np.transpose(doc.curve[0])[1]
+        if s[0] != 0:
+            # sew missing head
+            step = s[1] - s[0]
+            # find number of missing points
+            head_number = (int)(np.rint((s[0]) / step))
+            ss = 0.0
+            s_head = np.full(head_number, 0.0)
+            Is_head = np.full(head_number, 0.0)
+            for i in range(head_number):
+                s_head[i] = ss
+                Is_head[i] = np.exp(ss * ss * Rg * Rg / -3.0)
+                ss += step
+            s = np.hstack((s_head, s))
+            Is = np.hstack((Is_head, Is))
+        arr.append(Is[firstPointIndex:lastPointIndex]*s[firstPointIndex:lastPointIndex]**(degree))
     return np.array(arr)
 
 
@@ -101,17 +116,18 @@ model.add(Activation('relu'))
 #model.add(Dense(args.hidden_units, input_dim=input_length, use_bias=True, kernel_initializer='he_uniform', bias_initializer='zeros'))
 #model.add(Activation('relu'))
 
-#for layer in range(args.layers - 1):
-#   # add layer
-#   model.add(Dense(args.units, use_bias=True, kernel_initializer='he_uniform', bias_initializer='zeros'))
-#   model.add(Activation('relu'))
-
-
 #model.add(Dense(args.bottleneck_units, use_bias=True, kernel_initializer='he_uniform', bias_initializer='zeros'))
 #model.add(Activation('relu'))
 
 #model.add(Dense(args.hidden_units, use_bias=True, kernel_initializer='he_uniform', bias_initializer='zeros'))
 #model.add(Activation('relu'))
+
+
+
+#for layer in range(args.layers - 1):
+#   # add layer
+#   model.add(Dense(args.units, use_bias=True, kernel_initializer='he_uniform', bias_initializer='zeros'))
+#   model.add(Activation('relu'))
 
 # output layer
 model.add(Dense(input_length))
