@@ -36,6 +36,7 @@ try:
     inputLength = loadedModel.input_shape[1]  # I(s) points
     print("Expected input: " + str(inputLength) + " points.")
     #outputLength = loadedModel.output_shape[1]  # p(r) points
+    numberOfPoints = (lastPointIndex - firstPointIndex)
 
     print("Model loaded. Yeah!")
 
@@ -55,30 +56,38 @@ for inputFilename in os.listdir(inputFolder):
     try:
         doc  = saxsdocument.read(os.path.join(inputFolder, inputFilename))
         dat  = np.transpose(np.array(doc.curve[0]))
-        s  = dat[0]
+        inputS  = dat[0]
         Is = dat[1]
 
     except Exception as e:
         print(f"Error: Could not read {inputFilename}:")
         print(e)
 
-    if s[0] != 0:
+    step = smax/(numberOfPoints - 1)
+    s = np.arange(0.0, 1.0000001, step)
+
+    if inputS[0] != 0:
         # sew missing head
-        step = s[1] - s[0]
         # find number of missing points
-        head_number = (int)(np.rint((s[0] )/step))
+        head_number = (int)(np.rint((inputS[0] )/step))
         ss = 0.0
-        s_head  = np.full(head_number, 0.0)
         Is_head = np.full(head_number, 0.0)
         for i in range(head_number):
-            s_head[i]  = ss
             Is_head[i] = np.exp(ss*ss*Rg*Rg/-3.0)
             ss += step
-        s  = np.hstack((s_head, s))
         Is = np.hstack((Is_head, Is))
 
     if len(Is[firstPointIndex:lastPointIndex]) != inputLength:
-        print(f"{inputFilename} too short, skipping.")
+        print(f"{inputFilename} too short.")
+        # Sew missing tail
+        tail_number = (int)(inputLength - len(Is[firstPointIndex:lastPointIndex]))
+        print(f"filename: {inputFilename}:  tail number: {tail_number}")
+        Is_tail = np.full(tail_number, 0.0)
+        Is = np.hstack((Is, Is_tail))
+
+    #FIXME: Crop input data
+    if len(Is[firstPointIndex:lastPointIndex]) > inputLength:
+        print(f"{inputFilename} too long, skipping for now.")
         continue
 
     if round(s[firstPointIndex], 3) != round(smin, 3):
@@ -86,7 +95,7 @@ for inputFilename in os.listdir(inputFolder):
         exit()
 
     if round(s[lastPointIndex - 1], 3) != round(smax, 3):
-        print(f"{inputFilename}: point {lastPointIndex - 1} has s={s[lastPointIndex]}, expected s={smax}")
+        print(f"{inputFilename}: point {lastPointIndex - 1} has s={s[lastPointIndex - 1]}, expected s={smax}")
         exit()
 
     Is = Is * s**(degree)
