@@ -26,7 +26,7 @@ import json
 from keras.callbacks import ModelCheckpoint
 from keras.models import Sequential
 from keras.layers import Dense, Activation
-from keras import losses
+from keras import losses, optimizers
 
 import matplotlib
 matplotlib.use('Agg')
@@ -84,6 +84,7 @@ smax = dat[lastPointIndex - 1][0]
 #read training set files
 Is   = readFiles(args.dataPath, firstPointIndex, lastPointIndex, args.degree)
 n_all = len(Is)
+averageIs = np.mean(Is, axis = 0)
 
 #create validation set
 if args.valData:
@@ -130,12 +131,17 @@ model.add(Activation('relu'))
 #   model.add(Activation('relu'))
 
 # output layer
-model.add(Dense(input_length))
+he = np.sqrt(0.06/input_length)
+#model.add(Dense(input_length, weights = [np.random.uniform(-he,he,[args.bottleneck_units, input_length]), averageIs]))
+model.add(Dense(input_length, weights = [np.zeros([args.bottleneck_units, input_length]), averageIs]))
+#model.add(Dense(input_length))
 
 if(args.weightsPath):
     model.load_weights(args.weightsPath)
+adama = optimizers.Adam(learning_rate=0.0001)
+#adam = Adam(lr=1e-3)#, epsilon = 1e-8, beta_1 = .9, beta_2 = .999)
 
-model.compile(optimizer='adam', loss=losses.huber_loss)
+model.compile(optimizer=adama, loss=losses.huber_loss)
 
 model_name = f"autoencoder-{args.prefix}-e{num_epochs}-bu{args.bottleneck_units}-l1-d{args.degree}"
 
