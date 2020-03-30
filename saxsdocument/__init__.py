@@ -15,7 +15,7 @@ def read(fileName):
             for line in f:
                 try:
                     line = line.strip()
-                    cols = line.split(" ")
+                    cols = line.split()
                     cols = list(filter(lambda a: a != '', cols))
                     if is_number(cols[0]) and len(cols) >= 2:
                         # we are in a number section
@@ -37,7 +37,7 @@ def read(fileName):
                         key, val = line.split(":")[0:2]
                         properties[key] = val
                 except Exception as e:
-                    #print(e)
+                    print(f"Warning: {e}")
                     pass
         return properties, curve
     except Exception as e:
@@ -74,11 +74,10 @@ def write(path, curve, prop=None):
     except Exception as e:
         print(f"Could not write file {path}: {e}")
 
-
-''' DEBUG
+'''
 import os
 
-folder = "C:\\Users\\Dima\\Nextcloud\\x33\\x33-dats-rg-10-100-rebin-smax-5-norm-i0"
+folder = "C:\\Users\\Dima\\Nextcloud\\p12\\p12-dats\\all"
 li = os.listdir(folder)
 
 
@@ -86,5 +85,5 @@ for file in li:
     path = os.path.join(folder, file)
     print(file)
     prop, cur = read(path)
-    write(f"C:\\Users\\Dima\\Nextcloud\\x33\\x33-dats-resaved\\{file}", cur, prop)
+    #write(f"C:\\Users\\Dima\\Nextcloud\\x33\\x33-dats-resaved\\{file}", cur, prop)
 '''
