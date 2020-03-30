@@ -14,30 +14,32 @@ def read(fileName):
         with open(fileName) as f:
             for line in f:
                 try:
-                    line = line.strip()
-                    cols = line.split()
-                    cols = list(filter(lambda a: a != '', cols))
-                    if is_number(cols[0]) and len(cols) >= 2:
-                        # we are in a number section
-                        s = float(cols[0])
-                        I = float(cols[1])
-                        curve["s"].append(s)
-                        curve["I"].append(I)
-                        # if dat file with errors
-                        if len(cols) == 3:
-                            Err = float(cols[2])
-                            curve["Err"].append(Err)
-                        # if fit file with errors
-                        if len(cols) == 4:
-                            Err = float(cols[2])
-                            curve["Err"].append(Err)
-                            Fit = float(cols[3])
-                            curve["Fit"].append(Fit)
-                    elif ":" in line:
-                        key, val = line.split(":")[0:2]
+                    if ':' in line:
+                        key, val = line.split(':')[0:2]
                         properties[key] = val
+                    else:
+                        line = line.strip()
+                        cols = line.split()
+                        cols = list(filter(lambda a: a != '', cols))
+                        if len(cols) == 0: continue
+                        if len(cols) >= 2 and is_number(cols[0]):
+                            # we are in a number section
+                            s = float(cols[0])
+                            I = float(cols[1])
+                            curve["s"].append(s)
+                            curve["I"].append(I)
+                            # if dat file with errors
+                            if len(cols) == 3:
+                                Err = float(cols[2])
+                                curve["Err"].append(Err)
+                            # if fit file with errors
+                            if len(cols) == 4:
+                                Err = float(cols[2])
+                                curve["Err"].append(Err)
+                                Fit = float(cols[3])
+                                curve["Fit"].append(Fit)
                 except Exception as e:
-                    print(f"Warning: {e}")
+                    print(f"Warning: for file {fileName}: {e}")
                     pass
         return properties, curve
     except Exception as e:
