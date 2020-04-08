@@ -31,11 +31,11 @@ from keras.models import Sequential, Model
 from keras.layers import Dense, Activation, Lambda, Input
 from keras import losses, optimizers
 from keras import backend as K
+from keras.utils import plot_model
 
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-
 
 
 def readFiles(path, firstPointIndex = 0, lastPointIndex = None, degree = 0):
@@ -46,6 +46,9 @@ def readFiles(path, firstPointIndex = 0, lastPointIndex = None, degree = 0):
     arr = []
     for f in files:
         p = os.path.join(path, f)
+        if os.path.isdir(p):
+            # skip directories
+            continue
         prop, cur  = saxsdocument.read(p)
         Is   = cur['I']
         arr.append(Is)
@@ -70,6 +73,17 @@ def sampling(args):
     # by default, random_normal has mean = 0 and std = 1.0
     epsilon = K.random_normal(shape=(batch, dim))
     return z_mean + K.exp(0.5 * z_log_var) * epsilon
+
+def r_loss(y_true, y_pred):
+    return K.mean(K.square(y_true - y_pred))
+
+def kl_loss(mean_mu, log_var):
+    kl_loss =  -0.5 * K.sum(1 + log_var - K.square(mean_mu) - K.exp(log_var))
+    return kl_loss
+
+LOSS_FACTOR = 10000
+def total_loss(y_true, y_pred):
+    return LOSS_FACTOR*r_loss(y_true, y_pred) + kl_loss(y_true, y_pred)
 
 
 # Process --first and --last:
@@ -134,7 +148,7 @@ z = Lambda(sampling, output_shape=(latent_dim,), name='z')([z_mean, z_log_var])
 # instantiate encoder model
 encoder = Model(inputs, [z_mean, z_log_var, z], name='encoder')
 encoder.summary()
-#plot_model(encoder, to_file='vae_mlp_encoder.png', show_shapes=True)
+plot_model(encoder, to_file='vae_encoder.png', show_shapes=True)
 
 # build decoder model
 latent_inputs = Input(shape=(latent_dim,), name='z_sampling')
@@ -144,7 +158,7 @@ outputs = Dense(input_length, activation='sigmoid')(x)
 # instantiate decoder model
 decoder = Model(latent_inputs, outputs, name='decoder')
 decoder.summary()
-#plot_model(decoder, to_file='vae_mlp_decoder.png', show_shapes=True)
+plot_model(decoder, to_file='vae_decoder.png', show_shapes=True)
 
 # instantiate VAE model
 outputs = decoder(encoder(inputs)[2])
@@ -161,7 +175,7 @@ if(args.weightsPath):
 #adama = optimizers.Adam(learning_rate=0.0001)
 #adam = Adam(lr=1e-3)#, epsilon = 1e-8, beta_1 = .9, beta_2 = .999)
 
-vae.compile(optimizer='Adam', loss='mse')#losses.huber_loss)
+vae.compile(optimizer='Adam', loss=total_loss, metrics=[r_loss, kl_loss])#losses.huber_loss)
 
 model_name = f"autoencoder-{args.prefix}-e{num_epochs}-bu{args.bottleneck_units}-l3-d{args.degree}"
 
