@@ -74,16 +74,18 @@ def sampling(args):
     epsilon = K.random_normal(shape=(batch, dim))
     return z_mean + K.exp(0.5 * z_log_var) * epsilon
 
+#another hyperparameter to adjust
+LOSS_FACTOR = 50000
 def r_loss(y_true, y_pred):
-    return K.mean(K.square(y_true - y_pred))
+    return LOSS_FACTOR*K.mean(K.square(y_true - y_pred))
 
 def kl_loss(mean_mu, log_var):
     kl_loss =  -0.5 * K.sum(1 + log_var - K.square(mean_mu) - K.exp(log_var))
     return kl_loss
 
-LOSS_FACTOR = 10000
+
 def total_loss(y_true, y_pred):
-    return LOSS_FACTOR*r_loss(y_true, y_pred) + kl_loss(y_true, y_pred)
+    return r_loss(y_true, y_pred) + kl_loss(y_true, y_pred)
 
 
 # Process --first and --last:
