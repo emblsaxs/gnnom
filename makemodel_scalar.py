@@ -4,13 +4,13 @@
 import argparse
 
 parser = argparse.ArgumentParser(description='Make NN model - arguments and options.')
-parser.add_argument('dataPath', metavar='data',   type=str, help='path to the training data folder')
-parser.add_argument('logPath',  metavar='logs',   type=str, help='path to the training log folder')
-parser.add_argument('epochs',   metavar='epochs', type=int, help='number of epochs')
+parser.add_argument('dataPath',    metavar='data',   type=str, help='path to the training data folder')
+parser.add_argument('logPath',     metavar='logs',   type=str, help='path to the training log folder')
+parser.add_argument('epochs',      metavar='epochs', type=int, help='number of epochs')
 parser.add_argument('parameter',   metavar='parameter', type=str, help='mw/dmax/rg')
-parser.add_argument('--units', type=int, default=40, help='number of units in the hidden layer (default: 40)')
-parser.add_argument('--first', type=int, default=1,  help='index of the first point to use (default: 1)')
-parser.add_argument('--last',  type=int, default=-1, help='index of the last point to use (default: use all)')
+parser.add_argument('--units', type=int,   default=40, help='number of units in the hidden layer (default: 40)')
+parser.add_argument('--first', type=int,   default=1,  help='index of the first point to use (default: 1)')
+parser.add_argument('--last',  type=int,   default=-1, help='index of the last point to use (default: use all)')
 parser.add_argument('--weightsPath', '-w', default=None, type=str, help='path to the h5 file')
 
 args = parser.parse_args()
@@ -37,18 +37,14 @@ import matplotlib.pyplot as plt
 num_epochs = int(args.epochs)
 par = args.parameter
 
-# Make sure there are no subfolders!
 dataFiles = os.listdir(args.dataPath)
-logFiles = os.listdir(args.logPath)
+logFiles = []#os.listdir(args.logPath)
 
-dataFiles.sort()
-logFiles.sort()
-
-print("Number of data files found: " + str(len(dataFiles)))
-print("Number of log  files found: " + str(len(logFiles)))
+#dataFiles.sort()
+#logFiles.sort()
 
 n_all   = len(dataFiles)
-n_cases = int(n_all * 0.9)
+n_cases = int(n_all * 0.95)
 
 print("Reading data files...")
 
@@ -75,11 +71,15 @@ for file in dataFiles:
     if os.path.isdir(path): continue
     prop, cur  = saxsdocument.read(path)
     Is.append(cur['I'][firstPointIndex:lastPointIndex])
+    logFiles.append(file[:-3] + "log")
 
 averageIs = np.mean(Is, axis = 0)
+#Is = Is - averageIs
+print("Number of data files found: " + str(len(dataFiles)))
+print("Number of log  files found: " + str(len(logFiles)))
 print("...done.")
 
-print("Reading log files...")
+print("Parsing log files...")
 parameters = []
 outCsv     = []
 
@@ -107,7 +107,8 @@ for file in logFiles:
                 break         
         if par == "mw":
             if "Weight" in line:
-                mw = float(line.split()[2])
+                mw = float(line.split()[2])/1000.0
+                #print(f"{file}: {mw} kDa")
                 rgdmaxmw.append(mw)
                 parameters.append(rgdmaxmw)
                 outCsv.append(file[:-4] + ', ' + str(round(mw, 3)))
@@ -132,7 +133,7 @@ model = Sequential()
 # first layer
 #he = np.sqrt(0.06/N)
 #model.add(Dense(args.units, input_dim=N, weights = [np.random.uniform(0,he,[args.units, N])]))
-model.add(Dense(args.units, input_dim=N, use_bias=True, kernel_initializer='he_uniform', bias_initializer='he_uniform'))
+model.add(Dense(args.units, input_dim=N, use_bias=True, kernel_initializer='he_uniform'))
 #model.add(Dense(input_length, weights = [np.random.uniform(-he,he,[args.bottleneck_units, input_length]), averageIs]))
 #model.add(Dense(input_length, weights = [np.zeros([args.hidden_units, input_length]), averageIs]))
 model.add(Activation('relu'))
@@ -140,15 +141,21 @@ model.add(Activation('relu'))
 # second layer
 model.add(Dense(args.units, use_bias=True, kernel_initializer='he_uniform', bias_initializer='zeros'))
 model.add(Activation('relu'))
+# third layer
+model.add(Dense(args.units, use_bias=True, kernel_initializer='he_uniform', bias_initializer='zeros'))
+model.add(Activation('relu'))
 
-model.add(Dense(output))
-#model.add(Dense(input_length, weights = [np.zeros([args.hidden_units, input_length]), 40000]))
-
-adama = optimizers.Adam(lr=0.001)
+avrgMW = np.mean(parameters[0:n_cases])
+print(f"Mean {par}: {avrgMW}")
+# marginal imporovement
+w = [np.zeros([args.units, 1]), np.array([avrgMW])]
+model.add(Dense(output, weights = w))
+#model.add(Dense(output))
+adama = optimizers.Adam(lr=0.0001)
 
 model.compile(optimizer= adama, loss='mse')
 
-model_name = "gnnom-avrg-i-rg-001-04-e" + str(args.epochs) + "-u" + str(args.units)
+model_name = f"gnnom-{par}-0-1-e{args.epochs}-u{args.units}"
 
 if(args.weightsPath):
     model.load_weights(args.weightsPath)
