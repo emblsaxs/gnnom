@@ -88,9 +88,8 @@ print("...done.")
 print("Parsing log files...")
 parameters = []
 outCsv     = []
-
 for file in logFiles:
-    logPath = os.path.join(args.logPath,log)
+    logPath = os.path.join(args.logPath,file)
     lines = [line.strip() for line in open(logPath)]
     rgdmaxmw = []
     # Read 'Molecular Weight: 0.4330E+06':
@@ -121,7 +120,6 @@ for file in logFiles:
                 break
 
 print("...done.")
-
  
 #save ground true values to csv
 outCsvPath = f"ground-{par}.csv"
