@@ -44,7 +44,7 @@ logFiles = []#os.listdir(args.logPath)
 #logFiles.sort()
 
 n_all   = len(dataFiles)
-n_cases = int(n_all * 0.95)
+n_cases = int(n_all * 0.9)
 
 print("Reading data files...")
 
@@ -69,23 +69,27 @@ if(args.last != -1):
 for file in dataFiles:
     path = os.path.join(args.dataPath, file)
     if os.path.isdir(path): continue
+    logPath = os.path.join(args.logPath,file[:-3] + "log")
+    if os.path.exists(logPath) == False: 
+        dataFiles.remove(file)
+        print(file)
+        continue
     prop, cur  = saxsdocument.read(path)
     Is.append(cur['I'][firstPointIndex:lastPointIndex])
-    logFiles.append(file[:-3] + "log")
+    logFiles.append(logPath)
 
 averageIs = np.mean(Is, axis = 0)
 #Is = Is - averageIs
 print("Number of data files found: " + str(len(dataFiles)))
 print("Number of log  files found: " + str(len(logFiles)))
 print("...done.")
-
+exit()
 print("Parsing log files...")
 parameters = []
 outCsv     = []
 
 for file in logFiles:
-    path = os.path.join(args.logPath, file)
-    lines = [line.strip() for line in open(path)]
+    lines = [line.strip() for line in open(file)]
     rgdmaxmw = []
     # Read 'Molecular Weight: 0.4330E+06':
     if par not in ["rg", "dmax", "mw"] : 
