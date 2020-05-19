@@ -69,14 +69,15 @@ if(args.last != -1):
 for file in dataFiles:
     path = os.path.join(args.dataPath, file)
     if os.path.isdir(path): continue
-    logPath = os.path.join(args.logPath,file[:-3] + "log")
+    log = file[:-3] + "log"
+    logPath = os.path.join(args.logPath,log)
     if os.path.exists(logPath) == False: 
         dataFiles.remove(file)
         print(file)
         continue
     prop, cur  = saxsdocument.read(path)
     Is.append(cur['I'][firstPointIndex:lastPointIndex])
-    logFiles.append(logPath)
+    logFiles.append(log)
 
 averageIs = np.mean(Is, axis = 0)
 #Is = Is - averageIs
@@ -89,7 +90,8 @@ parameters = []
 outCsv     = []
 
 for file in logFiles:
-    lines = [line.strip() for line in open(file)]
+    logPath = os.path.join(args.logPath,log)
+    lines = [line.strip() for line in open(logPath)]
     rgdmaxmw = []
     # Read 'Molecular Weight: 0.4330E+06':
     if par not in ["rg", "dmax", "mw"] : 
