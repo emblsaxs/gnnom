@@ -83,7 +83,7 @@ averageIs = np.mean(Is, axis = 0)
 print("Number of data files found: " + str(len(dataFiles)))
 print("Number of log  files found: " + str(len(logFiles)))
 print("...done.")
-exit()
+
 print("Parsing log files...")
 parameters = []
 outCsv     = []
@@ -120,7 +120,11 @@ for file in logFiles:
 
 print("...done.")
 
-
+ 
+#save ground true values to csv
+outCsvPath = f"ground-{par}.csv"
+np.savetxt(outCsvPath, outCsv, delimiter=",", fmt='%s')
+print(outCsvPath + " is written.")
 
 # Perceptron neural network
 #tensorboard = keras.callbacks.TensorBoard(log_dir='./Graph', histogram_freq=0, write_graph=True, write_images=True)
@@ -197,11 +201,7 @@ scores = model.evaluate(np.array(Is[0:n_cases]), np.array(parameters[0:n_cases])
 
 print(model.metrics_names)
 print(scores)
- 
-#save ground true values to csv
-outCsvPath = f"ground-{par}.csv"
-np.savetxt(outCsvPath, outCsv, delimiter=",", fmt='%s')
-print(outCsvPath + " is written.")
+
  
 # serialize model to JSON
 model_json = model.to_json()
