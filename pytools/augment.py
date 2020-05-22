@@ -28,13 +28,13 @@ for inputFilename in os.listdir(inputFolder):
         s    = np.array(curve['s'])
         Is   = np.array(curve['I'])
         err  = np.array(curve['Err'])
-        if len(err) == 0: err = np.sqrt(Is)
+        if len(err) == 0: err = np.zeros(len(Is))#np.sqrt(Is)
         nrd = np.random.normal(0.0, noise, len(Is))
         nrd[-1] = 0
         errm = np.sqrt((err*mul)**2 + (noise*mul)**2)
         Ism  = (Is + nrd + add) * mul
         out  = np.vstack((s,Ism, errm))
-        outPath = (prefix + inputFilename)
+        outPath = os.path.join(prefix, inputFilename)
         np.savetxt( outPath, np.transpose(out), footer = f"noise: {noise}\nbackground: {add}\nscale:{mul}", fmt = "%.8e")
     except Exception as e:
         print(e)
