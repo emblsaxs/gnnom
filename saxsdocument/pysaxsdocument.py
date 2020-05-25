@@ -47,6 +47,14 @@ def read(fileName):
                                 doc.curve[2].append(Err)
                                 Fit = float(cols[3])
                                 doc.curve[3].append(Fit)
+                            # The first line is a title. Five columns contain: (1) experimental scattering vector in inverse angstroms, (2) theoretical intensity in solution, (3) in vacuo, (4) the solvent scattering and (5) the border layer scattering.
+                            #if len(cols) == 5:
+                            #    vacuum = float(cols[2])
+                            #    doc.curve[2].append(vacuum)
+                            #    solvent = float(cols[3])
+                            #    doc.curve[3].append(solvent)
+                            #    border = float(cols[4])
+                            #    doc.curve[4].append(border)
                 except Exception as e:
                     print(f"Warning: for file {fileName}: {e}")
                     pass
