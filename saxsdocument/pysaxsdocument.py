@@ -1,8 +1,9 @@
 import numpy as np
+from collections import defaultdict
 
 class document:
     def __init__(self):
-        self.property = {}
+        self.property = defaultdict(list)
         # 0 - s, 1 - I, 2 - Err, 3 - Fit
         self.curve = [[] for i in range(4)]
     def set(curve, prop = {}):
@@ -28,7 +29,7 @@ def read(fileName):
                         key = l[0]
                         val = (':'.join(l[1:]))
                         #key, val = line.split(':')[0:2]
-                        doc.property[key] = val
+                        doc.property[key].append(val)
                     else:
                         line = line.strip()
                         cols = line.split()
@@ -70,7 +71,7 @@ def read(fileName):
 def write(path, curve, prop = {}):
     head = ""
     foot = ""
-    headerKeys = ["Sample description", "Sample", "parent", "Parent", "Parent(s)"]
+    headerKeys = ["Sample description", "Sample", "Parent(s)"]
     try:
         s = np.array(curve[0]).astype(np.float64)
         I = np.array(curve[1]).astype(np.float64)
@@ -78,10 +79,12 @@ def write(path, curve, prop = {}):
             for hk in headerKeys:
                 if hk in prop:
                     st = prop[hk]
-                    head += f"{hk} : {st}"
+                    for ss in st:
+                        head += f"{hk} : {ss}"
             for key, val in prop.items():
                 #if key not in headerKeys:
-                foot += f"{key} : {val}"
+                for v in val:
+                    foot += f"{key} : {v}"
         if len(curve[2]) > 0 and len(curve[3]) == 0:
             Err = np.array(curve[2]).astype(np.float64)
             out = np.vstack((s, I, Err))
