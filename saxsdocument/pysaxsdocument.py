@@ -2,11 +2,11 @@ import numpy as np
 
 class document:
     def __init__(self):
-        self.properties = {}
+        self.property = {}
         # 0 - s, 1 - I, 2 - Err, 3 - Fit
         self.curve = [[] for i in range(4)]
     def set(curve, prop = {}):
-        self.properties = prop
+        self.property = prop
         self.curve      = curve
   
 def is_number(s):
@@ -24,8 +24,11 @@ def read(fileName):
                 try:
                     #FIXME: if more than one colon in the line
                     if ':' in line:
-                        key, val = line.split(':')[0:2]
-                        doc.properties[key] = val
+                        l = line.split(':')
+                        key = l[0]
+                        val = (':'.join(l[1:]))
+                        #key, val = line.split(':')[0:2]
+                        doc.property[key] = val
                     else:
                         line = line.strip()
                         cols = line.split()
@@ -67,7 +70,7 @@ def read(fileName):
 def write(path, curve, prop = {}):
     head = ""
     foot = ""
-    headerKeys = ["Sample", "Sample description", "parent", "Parent"]
+    headerKeys = ["Sample description", "Sample", "parent", "Parent", "Parent(s)"]
     try:
         s = np.array(curve[0]).astype(np.float64)
         I = np.array(curve[1]).astype(np.float64)
@@ -88,7 +91,7 @@ def write(path, curve, prop = {}):
             out = np.vstack((s, I, Err, Fit))
         elif len(curve[2]) == 0 and len(curve[3]) == 0:
             out = np.vstack((s, I))
-        np.savetxt(path, np.transpose(out), fmt="%.8e", header=head, footer=foot)
+        np.savetxt(path, np.transpose(out), fmt="%.8e", header=head, footer=foot, comments = '')
 
     except Exception as e:
         print(f"Could not write file {path}: {e}")
