@@ -78,10 +78,10 @@ def write(path, curve, prop = {}):
             for hk in headerKeys:
                 if hk in prop:
                     st = prop[hk]
-                    head += f"{hk} : {st}\n"
+                    head += f"{hk} : {st}"
             for key, val in prop.items():
                 #if key not in headerKeys:
-                foot += f"{key} : {val}\n"
+                foot += f"{key} : {val}"
         if len(curve[2]) > 0 and len(curve[3]) == 0:
             Err = np.array(curve[2]).astype(np.float64)
             out = np.vstack((s, I, Err))
