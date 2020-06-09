@@ -22,10 +22,11 @@ dataFiles.sort()
 for inputFilename in dataFiles:
     try:
         __, cur  = saxsdocument.read(os.path.join(args.dataPath, inputFilename))
-        s  = cur['s']
-        Is = cur['I']
+        Is  = cur['I']
+        #if (len(Is) != 100): continue
+        s = cur['s']
         Err = cur['Err']
-        teeth = np.divide(Err, np.sqrt(Is))
+        teeth = np.divide(np.array(Err), np.sqrt(np.abs(Is)))
         outTeeth.append(teeth)
 
     except Exception as e:
@@ -36,7 +37,9 @@ for inputFilename in dataFiles:
 outTeeth = np.array(outTeeth)
 averageIs = np.mean(outTeeth, axis = 0)
 stdvIs = np.std(outTeeth, axis = 0)
+prop = {"creator" : "teethMaker"}
+#out = np.vstack((s, averageIs, stdvIs))
+out = {'s' : s, 'I' : averageIs, 'Err' : stdvIs, 'Fit' : ''}
 
-saxsdocument.write(args.output, np.vstack((s, averageIs, stdvIs)), {creator : "teethMaker"})
-print ("Averaged file is written to ... "+ args.output)
+saxsdocument.write(args.output, out, prop)
 print("--- %s seconds ---" % (time.time() - start_time))
