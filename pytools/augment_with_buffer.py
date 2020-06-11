@@ -43,9 +43,11 @@ for inputFilename in os.listdir(inputFolder):
         Is   = conc*np.array(curve['I']) + IsBuf
         err  = np.sqrt(np.abs(Is/teeth))
         IsNoise = np.random.normal(Is, err)
-        #errm = np.sqrt((err*mul)**2 + (noise*mul)**2)
-        prop['teeth'] = templatePath
-        saxsdocument.write(f"{prefix}{inputFilename}.dat", {'s' : s, 'I' : IsNoise, 'Err' : err, 'Fit' : ''}, prop)
-        
+        #prop['teeth'] = templatePath
+        # unsubtracted curve
+        #saxsdocument.write(f"{prefix}{inputFilename}.dat", {'s' : s, 'I' : IsNoise, 'Err' : err, 'Fit' : ''}, prop)
+        IsSub  = (IsNoise - IsBufNoise)/conc
+        errSub = np.sqrt(errBuf**2 + err**2)/conc
+        saxsdocument.write(f"{prefix}{inputFilename[:-4]}.dat", {'s' : s, 'I' : IsSub, 'Err' : errSub, 'Fit' : ''}, prop)
     except Exception as e:
         print(e)
