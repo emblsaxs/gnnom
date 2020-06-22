@@ -1,63 +1,59 @@
 #!/usr/bin/env
+import argparse
 
-import re,sys,os
+parser = argparse.ArgumentParser(description='Parse crysol log files and plot histo.')
+parser.add_argument('logPath',     metavar='logs',   type=str, help='path to the training log folder')
+parser.add_argument('parameter',   metavar='par', type=str, help='mw/dmax/rg')
+parser.add_argument('outCsv', type=str,   default="out.csv", help='path to output csv file')
+
+args = parser.parse_args()
+import os
 import numpy as np
-import fnmatch
-import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+logs = args.logPath
+par   = args.parameter
+fileNames = os.listdir(logs)
+print("Parsing log files...")
+outCsv     = []
+params     = []
 
-# python hist_rg (input_root_log_directory) (rg/dmax/mw) (output_csv)
-
-if (sys.argv[1] == '-h') or (sys.argv[1] == '--help'):
-  print("python parser (input_root_log_directory) (rg/dmax/mw) (output_csv)")
-  sys.exit()
-
-folderPath = sys.argv[1]
-par        = sys.argv[2]
-csvPath  = sys.argv[3]
-
-fileNames = []
-params    = []
-
-for root, dirnames, filenames in os.walk(folderPath):
-  for filename in fnmatch.filter(filenames, '*.log'):
-    f = os.path.join(root,filename)
-    fileNames.append(filename)
+for file in fileNames:
+    f = os.path.join(logs,file)
     with open(f, 'r') as logFile:
       lines = logFile.readlines()
       for line in lines:
-        if par == 'rg':
-          if re.search('Rg from the slope of net intensity',line):
-            Rg = line.split(':')[-1]
-            params.append(Rg)
-        elif par == 'dmax':
-          if re.search('Envelope  diameter',line):
-            Dmax = line.split(':')[-1]
-            params.append(Dmax)
-        elif par == 'mw':
-          if re.search('Molecular Weight',line):
-            l1 = line.split('Molecular Weight: ')[1]
-            l2 = l1.split('   Dry volume         :')[0]
-            params.append(l2)
-        if line == None:
-          print('Parse error for file: ' + f)
+              if par == "rg":
+                  if "slope" in line:
+                      rg = float(line.split()[-1])
+                      params.append(rg)
+                      outCsv.append(file[:-4] + ', ' + str(round(rg, 3)))
+                      break
+              if par == "dmax":
+                  if "diameter" in line:
+                      dmax = float(line.split()[-1])
+                      params.append(dmax)
+                      outCsv.append(file[:-4] + ', ' + str(round(dmax, 3)))
+                      break         
+              if par == "mw":
+                  if "Weight" in line:
+                      mw = float(line.split()[2])/1000.0
+                      params.append(mw)
+                      outCsv.append(file[:-4] + ', ' + str(round(mw, 3)))
+                      break
+print("...done.")
 
-nfileNames = np.array(fileNames)
-nParams    = np.array(params)
-out        = np.vstack((nfileNames, nParams))
-out        = out.astype(str)
-#np.info(out)
-np.savetxt(csvPath,np.transpose(out), delimiter = ',', fmt = "%s")
+#save ground true values to csv
+outCsvPath = f"ground-{par}-{len(fileNames)}.csv"
+np.savetxt(outCsvPath, outCsv, delimiter=",", fmt='%s')
+print(outCsvPath + " is written.")
 
-nParams    = nParams.astype(float)
-
-plt.hist(nParams, bins = 'auto')
-
-plt.ylabel('Number of files')
-plt.xlabel(par)
-
-plt.title('Histogram of ' + par)
-
-plt.savefig('hist_'+par+'.png',format='png', dpi=250)
-plt.clf()
+n, bins, patches = plt.hist(params, edgecolor='black', bins=50, density=True, facecolor='g', alpha=0.75)
+plt.xlabel('Bins')
+plt.ylabel('Number')
+aver = round(np.mean(params), 2)
+minim = round(min(params), 2)
+maxim = round(max(params), 2)   
+tt = f"{par}\nMean: {aver}\nMin: {minim}  Max: {maxim}"
+plt.title(tt)
+plt.grid(True)
+plt.show()
