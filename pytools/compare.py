@@ -96,10 +96,11 @@ if metric == "l":
     plt.ylabel('Predicted')
     linGT = np.array(linGT)
     linC = np.array(linC)
-    rd  = (linGT - linC)/linGT
-    std = np.std(rd)
-    med = np.median(rd)
-    plt.title("std = " + str(std*100) + " %\nmedian = " + str(med*100) + " %")
+    rd  = (linC - linGT)/linGT
+    aver = "{:.2%}".format(np.mean(rd))
+    med = "{:.2%}".format(np.median(rd))    
+    tt = f"Mean: {aver}\nMedian: {med}"
+    plt.title(tt)
     plt.grid(True)
     plt.show()
 
@@ -107,11 +108,11 @@ if metric == "l":
 if metric == "h":
     # the histogram of the data
     n, bins, patches = plt.hist(rd, edgecolor='black', bins=50, density=True, facecolor='g', alpha=0.75)
-
     plt.xlabel('Bins')
     plt.ylabel('Probability')
-    std = np.std(rd)
-    med = np.median(rd)
-    plt.title("std = " + str(std*100) + " %\nmedian = " + str(med*100) + " %")
+    aver = "{:.2%}".format(np.mean(rd))
+    med = "{:.2%}".format(np.median(rd))    
+    tt = f"Mean: {aver}\nMedian: {med}"
+    plt.title(tt)
     plt.grid(True)
     plt.show()
