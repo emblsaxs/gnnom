@@ -7,8 +7,8 @@ parser = argparse.ArgumentParser(description='Make NN model - arguments and opti
 parser.add_argument('dataPath', metavar='data', type=str, help='path to the training data folder')
 parser.add_argument('pddfPath', metavar='pddf', type=str, help='path to the training pddf folder')
 parser.add_argument('--epochs', default=None,   type=int, help='number of epochs')
-parser.add_argument('--layers', default=1,      type=int, help='number of hidden layers')
-parser.add_argument('--units',  default=80,     type=int, help='number of units in the hidden layer (default: 40)')
+parser.add_argument('--layers', default=2,      type=int, help='number of hidden layers')
+parser.add_argument('--units',  default=40,     type=int, help='number of units in the hidden layer (default: 40)')
 parser.add_argument('--first',   type=int, default= 1, help='index of the first point to use (default: 1)')
 parser.add_argument('--last',    type=int, default=-1, help='index of the last point to use (default: use all)')
 parser.add_argument('--valData', type=str, help='path to the validation data folder')
@@ -21,6 +21,7 @@ args = parser.parse_args()
 import keras
 import numpy as np
 import saxsdocument
+#from saxsdocument import pysaxsdocument as saxsdocument
 import os
 import json
 
@@ -40,8 +41,10 @@ def readFiles(path, isPddf = False, firstPointIndex = 0, lastPointIndex = None):
     arr = []
     for f in files:
         p = os.path.join(path, f)
-        doc  = saxsdocument.read(p)
-        dat  = np.transpose(doc.curve[0])[1]
+        #doc  = saxsdocument.read(p)
+        #dat  = np.transpose(doc.curve[0])[1]
+        __, cur = saxsdocument.read(p)
+        dat = np.array(cur['I'])
         if isPddf:
             # Nullify all points after the first p(r) < 0
             negIndex = np.argmax(dat < 0)
@@ -58,31 +61,32 @@ firstPointIndex = int(args.first) - 1
 # Read first I(s) file to get number of points
 file = os.listdir(args.dataPath)[0]
 path = os.path.join(args.dataPath, file)
-doc  = saxsdocument.read(path)
-dat  = doc.curve[0]
+__, doc  = saxsdocument.read(path)
+#dat  = doc.curve[0]
+s   = doc['s']
 
-lastPointIndex = len(dat)
+lastPointIndex = len(s)
 if(int(args.last) > lastPointIndex):
     print(f"--last must be less or equal to the number of points in data files: {lastPointIndex}")
     exit()
 if(args.last != -1):
     lastPointIndex = int(args.last)
 
-smin = dat[firstPointIndex][0]
-smax = dat[lastPointIndex - 1][0]
+smin = s[firstPointIndex]
+smax = s[lastPointIndex - 1]
 
 #read first pddf file to get number of points
 file          = os.listdir(args.pddfPath)[0]
 path          = os.path.join(args.pddfPath, file)
-doc           = saxsdocument.read(path)
-dat           = doc.curve[0]
+__, doc       = saxsdocument.read(path)
+dat           = doc['I']#.curve[0]
 output_length = len(dat)
 
 #read training set files
-Is   = readFiles(args.dataPath, False, firstPointIndex, lastPointIndex)
-pddf = readFiles(args.pddfPath, True)
-
-n_all = len(Is)
+Is        = readFiles(args.dataPath, False, firstPointIndex, lastPointIndex)
+pddf      = readFiles(args.pddfPath, True)
+pddfMean  = np.mean(pddf, axis = 0)
+n_all     = len(Is)
 # NB: without p(r) normalization the result is much worse
 # Normalize PDDF: divide by stdev:
 stdpddf  = np.std(pddf)
@@ -127,13 +131,14 @@ for layer in range(args.layers - 1):
    model.add(Activation('relu'))
 
 # output layer
-model.add(Dense(output_length))
+w = [np.zeros([args.units, len(pddfMean)]), pddfMean]
+model.add(Dense(output_length, weights = w))
 
 model.compile(optimizer='adam', loss='mse')
 
 model_name = f"gnnom-i0-pddf-{args.prefix}-e{num_epochs}-u{args.units}-l{args.layers}"
 
-train_history = model.fit(Is, pddf, epochs=num_epochs,  batch_size=32,
+train_history = model.fit(Is, pddf, epochs=num_epochs,  batch_size=n_all,
                           validation_data =  (IsVal, pddfVal),
                           callbacks = [ModelCheckpoint(model_name + '.h5', save_best_only=True)])
 
