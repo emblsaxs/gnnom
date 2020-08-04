@@ -71,8 +71,6 @@ for f in folders:
     #read training set files
     Is        = readFiles(d, False, firstPointIndex, lastPointIndex)
     pddf      = readFiles(args.pddfPath, True)
-    pddf = pddf / np.std(pddf)
-    pddfMean  = np.mean(pddf, axis = 0)
     n_all     = len(Is)
 
 # read validation data and pddf
@@ -92,6 +90,10 @@ else:
     pddf    = pddf[0:n_cases]
 
 stdpddf = np.std(pddf)
+pddf    = pddf / stdpddf
+pddfVal = pddfVal/np.std(pddfVal)
+pddfMean  = np.mean(pddf, axis = 0)
+
 print(f"Total: {len(Is)} training data files")
 print(f"Total: {len(pddf)} training PDDF files")
 print(f"Total: {len(IsVal)} validation data files")
@@ -115,12 +117,12 @@ model = Sequential()
 
 # first layer
 model.add(Dense(args.units, input_dim=input_length, use_bias=True, kernel_initializer='he_uniform', bias_initializer='zeros'))
-model.add(Activation('relu'))
+model.add(Activation('tanh'))
 
 for layer in range(args.layers - 1):
    # add layer
    model.add(Dense(args.units, use_bias=True, kernel_initializer='he_uniform', bias_initializer='zeros'))
-   model.add(Activation('relu'))
+   model.add(Activation('tanh'))
 
 # output layer
 w = [np.zeros([args.units, len(pddfMean)]), pddfMean]
@@ -156,15 +158,15 @@ val_loss = train_history.history['val_loss']
 
 data = np.arange(input_length)
 
-plt.imshow(model.get_weights()[0], cmap='coolwarm')
-plt.savefig('weights-' + model_name + '.png')
-plt.clf()
+#plt.imshow(model.get_weights()[0], cmap='coolwarm')
+#plt.savefig('weights-' + model_name + '.png')
+#plt.clf()
 
 np.savetxt('loss-' + model_name + '.int', np.transpose(np.vstack((np.arange(num_epochs),loss, val_loss))), fmt = "%.8e")
 
 # compute consumed time
 end = time.time()
-t   = str(round((start - end) / 3600,2))
+t   = str(round((end - start) / 60,2))
 # serialize model to JSON
 model_str = model.to_json()
 model_json = json.loads(model_str)
@@ -173,7 +175,7 @@ model_json['smin'] = smin
 model_json['smax'] = smax
 model_json['firstPointIndex'] = firstPointIndex  # including, starts from 0
 model_json['lastPointIndex']  = lastPointIndex   # excluding
-model_json['hoursTrained']    = t   
+model_json['minutesTrained']    = t   
 
 with open(model_name + ".json", "w") as json_file:
     json_file.write(json.dumps(model_json))
