@@ -28,6 +28,7 @@ import json
 from keras.callbacks import ModelCheckpoint
 from keras.models import Sequential
 from keras.layers import Dense, Activation
+from keras import losses, optimizers
 
 #import matplotlib
 #matplotlib.use('Agg')
@@ -128,7 +129,9 @@ for layer in range(args.layers - 1):
 w = [np.zeros([args.units, len(pddfMean)]), pddfMean]
 model.add(Dense(output_length, weights = w))
 
-model.compile(optimizer='adam', loss='mse')
+adama = optimizers.Adam(lr=0.0001)
+
+model.compile(optimizer= adama, loss='mse')
 
 model_name = f"gnnom-pddf-{args.prefix}-e{num_epochs}-u{args.units}-l{args.layers}"
 
