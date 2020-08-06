@@ -6,11 +6,12 @@ import argparse
 parser = argparse.ArgumentParser(description='Make NN model - arguments and options.')
 parser.add_argument('dataPath',    metavar='data',   type=str, help='path to the training data folder')
 parser.add_argument('logPath',     metavar='logs',   type=str, help='path to the training log folder')
-parser.add_argument('epochs',      metavar='epochs', type=int, help='number of epochs')
+#parser.add_argument('valPath',     metavar='val', default = "", type=str, help='path to the validation data folder')
+parser.add_argument('epochs',  metavar='epochs', type=int, help='number of epochs')
 parser.add_argument('parameter',   metavar='parameter', type=str, help='mw/dmax/rg')
 parser.add_argument('--units', type=int,   default=40, help='number of units in the hidden layer (default: 40)')
 parser.add_argument('--first', type=int,   default=1,  help='index of the first point to use (default: 1)')
-parser.add_argument('--last',  type=int,   default=-1, help='index of the last point to use (default: use all)')
+parser.add_argument('--last',  type=int,   default=None, help='index of the last point to use (default: use all)')
 parser.add_argument('--weightsPath', '-w', default=None, type=str, help='path to the h5 file')
 
 args = parser.parse_args()
@@ -20,6 +21,7 @@ import keras
 import numpy as np
 import saxsdocument
 import os
+import json
 from keras.callbacks import TensorBoard, ModelCheckpoint
 from keras import losses, optimizers
 from keras.models import Sequential
@@ -33,64 +35,103 @@ import matplotlib.pyplot as plt
 #np.random.seed(5)
 #tf.random.set_seed(5)
 
+import time
 
-num_epochs = int(args.epochs)
-par = args.parameter
+start = time.time()
 
-dataFiles = os.listdir(args.dataPath)
-logFiles = []#os.listdir(args.logPath)
+num_epochs    = args.epochs
+par           = args.parameter
+
+#valPath       = args.valPath
+dataPath      = args.dataPath
+logPath      = args.logPath
+dataFiles     = []
+valFiles      = []
+logFiles      = []
+logFilesVal   = []
+
+folders = ["dat-c025-norm-i0", "dat-c05-norm-i0", "dat-c1-norm-i0", "dat-c2-norm-i0", "dat-c4-norm-i0", "dat-c8-norm-i0", "dat-c16-norm-i0"]
+
+for f in folders:
+    d = os.path.join(dataPath+f,"dat")
+    v = os.path.join(dataPath+f,"validation")
+    fileNames = os.listdir(d)
+    valNames  = os.listdir(v)
+    for ff in fileNames: dataFiles.append(dataPath+f+"/dat/"+ff)
+    for ff in valNames: valFiles.append(dataPath+f+"/validation/"+ff)
+#logFiles.extend(os.listdir(args.logPath))
 
 #dataFiles.sort()
 #logFiles.sort()
 
-n_all   = len(dataFiles)
-n_cases = int(n_all * 0.9)
+#n_all   = len(dataFiles)
+#n_cases = int(valFiles)
 
 print("Reading data files...")
 
-Is = []
+Is     = []
+IsVal  = []
 
+# process --first and --last
+__, cur  = saxsdocument.read(dataFiles[0])
+dat  = cur['s']
 
-# Process --first and --last:
-firstPointIndex = int(args.first) - 1
-
-path = os.path.join(args.dataPath, dataFiles[0])
-__, cur  = saxsdocument.read(path)
-dat  = cur['I']
-lastPointIndex = len(dat)
-
-if(int(args.last) > lastPointIndex):
-    print("--last must be less or equal to the number of points in data files: " + str(lastPointIndex))
+if(int(args.last) > len(dat)):
+    print(f"--last must be less or equal to the number of points in data files: {args.last}")
     exit()
 
-if(args.last != -1):
-    lastPointIndex = int(args.last)
-
+firstPointIndex = int(args.first) - 1
+if(args.last): lastPointIndex = int(args.last)
+    
+smin = dat[firstPointIndex]
+smax = dat[lastPointIndex]
+print(f"smin = {smin}")
+print(f"smax = {smax}")
+#exit()
 for file in dataFiles:
-    path = os.path.join(args.dataPath, file)
-    if os.path.isdir(path): continue
-    log = file[:-3] + "log"
-    logPath = os.path.join(args.logPath,log)
-    if os.path.exists(logPath) == False: 
+    name = os.path.basename(file)
+    #path = os.path.join(args.dataPath, file)
+    if os.path.isdir(file): continue
+    log = name[:-4] + ".log"
+    l   = os.path.join(logPath,log)
+    if os.path.exists(l) == False: 
         dataFiles.remove(file)
-        print(file)
+        print(f"No logs: removed from training {file}")
         continue
-    prop, cur  = saxsdocument.read(path)
+    prop, cur  = saxsdocument.read(file)
     Is.append(cur['I'][firstPointIndex:lastPointIndex])
-    logFiles.append(log)
+    logFiles.append(l)
+
+for file in valFiles:
+    name = os.path.basename(file)
+    #path = os.path.join(args.dataPath, file)
+    if os.path.isdir(file): continue
+    log = name[:-4] + ".log"
+    l   = os.path.join(logPath,log)
+    if os.path.exists(l) == False: 
+        valFiles.remove(file)
+        print(f"No logs: removed from validation {file}")
+        continue
+    prop, cur  = saxsdocument.read(file)
+    IsVal.append(cur['I'][firstPointIndex:lastPointIndex])
+    logFilesVal.append(l)
 
 averageIs = np.mean(Is, axis = 0)
 #Is = Is - averageIs
-print("Number of data files found: " + str(len(dataFiles)))
-print("Number of log  files found: " + str(len(logFiles)))
+print(f"Number of data files found: {len(dataFiles)}")
+print(f"Number of log  files found: {len(logFiles)}")
+print(f"Number of validation files found: {len(valFiles)}")
+print(f"Number of validation log  files found: {len(logFilesVal)}")
 print("...done.")
 
-print("Parsing log files...")
+print("Parsing data log files...")
 parameters = []
 outCsv     = []
-for file in logFiles:
-    logPath = os.path.join(args.logPath,file)
-    lines = [line.strip() for line in open(logPath)]
+for f in logFiles:
+    #l    = file#os.path.join(args.logPath,file)
+    file = os.path.basename(f)
+    #print(f)
+    lines = [line.strip() for line in open(f)]
     rgdmaxmw = []
     # Read 'Molecular Weight: 0.4330E+06':
     if par not in ["rg", "dmax", "mw"] : 
@@ -120,9 +161,45 @@ for file in logFiles:
                 break
 
 print("...done.")
+
+print("Parsing validation log files...")
+parametersVal = []
+for f in logFilesVal:
+    #l = file#os.path.join(args.logPath,file)
+    file = os.path.basename(f)
+    lines = [line.strip() for line in open(f)]
+    rgdmaxmwVal = []
+    # Read 'Molecular Weight: 0.4330E+06':
+    if par not in ["rg", "dmax", "mw"] : 
+        print(f"Wrong parameter {par}! Please enter rg, dmax or mw")
+    for line in lines:
+        if par == "rg":
+            if "slope" in line:
+                rg = float(line.split()[-1])
+                rgdmaxmwVal.append(rg)
+                parametersVal.append(rgdmaxmwVal)
+                outCsv.append(file[:-4] + ', ' + str(round(rg, 3)))
+                break
+        if par == "dmax":
+            if "diameter" in line:
+                dmax = float(line.split()[-1])
+                rgdmaxmwVal.append(dmax)
+                parametersVal.append(rgdmaxmwVal)
+                outCsv.append(file[:-4] + ', ' + str(round(dmax, 3)))
+                break         
+        if par == "mw":
+            if "Weight" in line:
+                mw = float(line.split()[2])/1000.0
+                #print(f"{file}: {mw} kDa")
+                rgdmaxmwVal.append(mw)
+                parametersVal.append(rgdmaxmwVal)
+                outCsv.append(file[:-4] + ', ' + str(round(mw, 3)))
+                break
+
+print("...done.")
  
 #save ground true values to csv
-outCsvPath = f"ground-{par}.csv"
+outCsvPath = f"ground-{par}-{len(logFiles)}.csv"
 np.savetxt(outCsvPath, outCsv, delimiter=",", fmt='%s')
 print(outCsvPath + " is written.")
 
@@ -153,25 +230,28 @@ model.add(Activation('relu'))
 model.add(Dense(args.units, use_bias=True, kernel_initializer='he_uniform', bias_initializer='zeros'))
 model.add(Activation('relu'))
 
-avrgMW = np.mean(parameters[0:n_cases])
+avrgMW = np.mean(parameters)
 print(f"Mean {par}: {avrgMW}")
 # marginal imporovement
 w = [np.zeros([args.units, 1]), np.array([avrgMW])]
 model.add(Dense(output, weights = w))
+model.add(Activation('relu'))
 #model.add(Dense(output))
 adama = optimizers.Adam(lr=0.0001)
 
 model.compile(optimizer= adama, loss='mse')
 
-model_name = f"gnnom-{par}-0-1-e{args.epochs}-u{args.units}"
+model_name = f"gnnom-{par}-0.1-5-e{args.epochs}-u{args.units}"
 
 if(args.weightsPath):
     model.load_weights(args.weightsPath)
 
-train_history = model.fit(np.array(Is[0:n_cases]), np.array(parameters[0:n_cases]), epochs=num_epochs,  batch_size=n_all,
-                          validation_data =  (np.array(Is[n_cases:n_all]), np.array(parameters[n_cases:n_all])),
+train_history = model.fit(np.array(Is), np.array(parameters), epochs=num_epochs,  batch_size=len(dataFiles),
+                          validation_data =  (np.array(IsVal), np.array(parametersVal)),
                           callbacks = [ModelCheckpoint(model_name + '.h5', save_best_only=True)])
-
+#train_history = model.fit(np.array(Is[0:n_cases]), np.array(parameters[0:n_cases]), epochs=num_epochs,  batch_size=n_all,
+#                          validation_data =  (np.array(Is[n_cases:n_all]), np.array(parameters[n_cases:n_all])),
+#                          callbacks = [ModelCheckpoint(model_name + '.h5', save_best_only=True)])
 
 loss = train_history.history['loss']
 val_loss = train_history.history['val_loss']
@@ -197,21 +277,27 @@ plt.clf()
 
 np.savetxt('loss-' + model_name + '.int', np.transpose(np.vstack((np.arange(num_epochs),loss, val_loss))), fmt = "%.8e")
 
-scores = model.evaluate(np.array(Is[0:n_cases]), np.array(parameters[0:n_cases]), verbose=0)
+scores = model.evaluate(np.array(IsVal), np.array(parametersVal), verbose=0)
 
 print(model.metrics_names)
 print(scores)
 
  
 # serialize model to JSON
-model_json = model.to_json()
-#model_json['smin'] = smin
-#model_json['smax'] = smax
-#model_json['firstPointIndex'] = firstPointIndex  # including, starts from 0
-#model_json['lastPointIndex']  = lastPointIndex   # excluding
+model_str = model.to_json()
+model_json = json.loads(model_str)
+model_json['smin'] = smin
+model_json['smax'] = smax
+model_json['firstPointIndex'] = firstPointIndex  # including, starts from 0
+model_json['lastPointIndex']  = lastPointIndex   # excluding
 #model_json['KratkyDegree']    = args.degree
+# compute elapsed time
+end = time.time()
+t   = str(round((end - start) / 60,2))
+model_json['minutesTrained']    = t  
+
 with open(model_name + ".json", "w") as json_file:
-    json_file.write(model_json)
+    json_file.write(json.dumps(model_json))
 # serialize weights to HDF5
 #model.save_weights(model_name + ".h5") #last but not best weights
 print("Saved model " + model_name + " to disk")
