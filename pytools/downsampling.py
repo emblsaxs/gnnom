@@ -19,6 +19,9 @@ def distance(point1, point2):
     point1 = np.array(point1)
     point2 = np.array(point2)
     d = np.linalg.norm(point1 - point2)
+    #d = 0 # do not convert list to numpy - no advantage in speed
+    #for i in range(len(point1)):
+    #    d += pow((point1[i]-point2[i]),2)
     return d
 
 def maxDistancePointAndList(point, list):
@@ -74,21 +77,17 @@ firstCurve = random.choice(inMatrix)
 inMatrix.remove(firstCurve)
 outMatrix = []
 outMatrix.append(firstCurve)
-dist = 0
-found = []
-found.append(firstCurve)
 for point in range(numberPoints - 1):
     print(f"{point} out of {numberPoints - 1}...")
     # find the most distance point in respect to the found ones
     dist = 0
     for p in inMatrix:
-        d = distancePointAndList(p, found)
+        d = distancePointAndList(p, outMatrix)
         if dist < d:
             dist = d
             pp = p
     inMatrix.remove(pp)
     outMatrix.append(pp)
-    found.append(pp)
 
 print("Saving files...")
 # save files
@@ -100,3 +99,5 @@ for p in outMatrix:
     prop = curve["properties"]
     path = os.path.join(outputFolder, prefix, name)
     saxsdocument.write(f"{prefix}{path}", {'s' : r, 'I' : p, 'Err' : '', 'Fit' : ''}, prop)
+
+print("Done.")
