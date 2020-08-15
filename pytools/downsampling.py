@@ -61,7 +61,7 @@ for inputFilename in inFiles:
         prop, curve   = saxsdocument.read(os.path.join(inputFolder, inputFilename))
         r    = curve['s']
         p    = curve['I']
-        inMatrix.append(p)
+        inMatrix.append(p[::2])
         inCurves.append({"filename" : inputFilename, "properties" : prop, "data" : p})
     except Exception as e:
         print(e)
@@ -75,7 +75,7 @@ if (length-len(inMatrix) > 0): print(f"{length-len(inMatrix)} duplicates removed
 #pick a random curve to be the first point
 firstCurve = random.choice(inMatrix)
 inMatrix.remove(firstCurve)
-outMatrix = []
+#outMatrix = []
 outMatrix.append(firstCurve)
 for point in range(numberPoints - 1):
     print(f"{point} out of {numberPoints - 1}...")
@@ -87,17 +87,14 @@ for point in range(numberPoints - 1):
             dist = d
             pp = p
     inMatrix.remove(pp)
-    outMatrix.append(pp)
-
-print("Saving files...")
-# save files
-r = np.arange(101)
-for p in outMatrix:
-    # find curve in inCurves
-    curve = [i for i in inCurves if (i["data"] == p)][0]
+    #outMatrix.append(pp)
+    # save files
+    r = np.arange(101)
+    curve = [i for i in inCurves if (i["data"][::2] == pp)][0]
     name = curve["filename"]
     prop = curve["properties"]
+    pddf = curve["data"]
     path = os.path.join(outputFolder, prefix, name)
-    saxsdocument.write(f"{prefix}{path}", {'s' : r, 'I' : p, 'Err' : '', 'Fit' : ''}, prop)
+    saxsdocument.write(f"{prefix}{path}", {'s' : r, 'I' : pddf, 'Err' : '', 'Fit' : ''}, prop)
 
-print("Done.")
+    print(f"{name} is saved")
