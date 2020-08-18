@@ -28,10 +28,10 @@ try:
     json_data = json.loads(loadedModelJson)
     if('Normalization coefficient' in json_data):
         stdpddf = (float)(json_data['Normalization coefficient'])
-    smin          = (float)(json_data['smin'])
-    smax          = (float)(json_data['smax'])
-    firstPointIndex = (int)(json_data['firstPointIndex'])
-    lastPointIndex  = (int)(json_data['lastPointIndex'])
+    #smin          = (float)(json_data['smin'])
+    #smax          = (float)(json_data['smax'])
+    #firstPointIndex = (int)(json_data['firstPointIndex'])
+    #lastPointIndex  = (int)(json_data['lastPointIndex'])
     
     jsonFile.close()
     loadedModel = model_from_json(loadedModelJson)
@@ -47,53 +47,54 @@ except KeyError as e:
     print(f"Error: Oops, model cannot be loaded! Missing value: {e}")
     exit()
 
-except:
-    print("Error: Oops, model cannot be loaded for unknown reasons.")
+except Exception as e:
+    print(f"Error: {e}")
     exit()
 
-Rg = 20.0 # Angstroms
+#Rg = 20.0 # Angstroms
 
 # output csv
 outCsv = []
-for inputFilename in os.listdir(inputFolder):
+dataFiles = os.listdir(args.dataPath)
+dataFiles.sort()
+for inputFilename in dataFiles:
     try:
-        doc  = saxsdocument.read(os.path.join(inputFolder, inputFilename))
-        dat  = np.transpose(np.array(doc.curve[0]))
-        s  = dat[0]
-        Is = dat[1]
+        __, cur  = saxsdocument.read(os.path.join(inputFolder, inputFilename))
+        s  = cur['s']
+        Is = cur['I']
 
     except Exception as e:
         print(f"Error: Could not read {inputFilename}:")
         print(e)
 
-    if s[0] != 0:
-        # sew missing head
-        step = s[1] - s[0]
-        # find number of missing points
-        head_number = (int)(np.rint((s[0] )/step))
-        ss = 0.0
-        s_head  = np.full(head_number, 0.0)
-        Is_head = np.full(head_number, 0.0)
-        for i in range(head_number):
-            s_head[i]  = ss
-            Is_head[i] = np.exp(ss*ss*Rg*Rg/-3.0)
-            ss += step
-        s  = np.hstack((s_head, s))
-        Is = np.hstack((Is_head, Is))
+    #if s[0] != 0:
+    #    # sew missing head
+    #    step = s[1] - s[0]
+    #    # find number of missing points
+    #    head_number = (int)(np.rint((s[0] )/step))
+    #    ss = 0.0
+    #    s_head  = np.full(head_number, 0.0)
+    #    Is_head = np.full(head_number, 0.0)
+    #    for i in range(head_number):
+    #        s_head[i]  = ss
+    #        Is_head[i] = np.exp(ss*ss*Rg*Rg/-3.0)
+    #        ss += step
+    #    s  = np.hstack((s_head, s))
+    #    Is = np.hstack((Is_head, Is))
 
-    if len(Is[firstPointIndex:lastPointIndex]) != inputLength:
-        print(f"{inputFilename} too short, skipping.")
-        continue
+    #if len(Is[firstPointIndex:lastPointIndex]) != inputLength:
+    #    print(f"{inputFilename} too short, skipping.")
+    #    continue
 
-    if round(s[firstPointIndex], 3) != round(smin, 3):
-        print(f"{inputFilename}: point {firstPointIndex} has s={s[firstPointIndex]}, expected s={smin}")
-        exit()
+    #if round(s[firstPointIndex], 3) != round(smin, 3):
+    #    print(f"{inputFilename}: point {firstPointIndex} has s={s[firstPointIndex]}, expected s={smin}")
+    #    exit()
 
-    if round(s[lastPointIndex - 1], 3) != round(smax, 3):
-        print(f"{inputFilename}: point {lastPointIndex - 1} has s={s[lastPointIndex]}, expected s={smax}")
-        exit()
+    #if round(s[lastPointIndex - 1], 3) != round(smax, 3):
+    #    print(f"{inputFilename}: point {lastPointIndex - 1} has s={s[lastPointIndex]}, expected s={smax}")
+    #    exit()
 
-    test = np.array([Is[firstPointIndex:lastPointIndex], ])
+    test = np.array([Is, ])
     pred = loadedModel.predict(test)
 
     #TODO: instead of checking output number of points > 10 read model type (scalar/pddf)
@@ -106,14 +107,14 @@ for inputFilename in os.listdir(inputFolder):
         pred[:,-1] = 0.0
 
         r = np.arange(0.0, len(pred[0]) * 0.25, 0.25)
-        outCsv.append(inputFilename + ', ' + str(round(r[-1], 3)))
+        outCsv.append(inputFilename[:-4] + ', ' + str(round(r[-1], 3)))
         # print(f"{len(r)} - {len(pred[0])} - {r[-1]}") # DEBUG
         pddf_predicted = np.vstack((r, stdpddf * pred[0]))
-        np.savetxt(inputFilename, np.transpose(pddf_predicted), fmt = "%.8e")
+        np.savetxt(inputFilename[:-4], np.transpose(pddf_predicted), fmt = "%.8e")
 
     else:
         for number in pred[0]:
-            outCsv.append(inputFilename + ', ' + str(round(number, 3)))
+            outCsv.append(inputFilename[:-4] + ', ' + str(round(number, 3)))
 
 if outCsvPath != "":
     np.savetxt(outCsvPath, outCsv, delimiter=",", fmt='%s')

@@ -1,0 +1,1 @@
+libsaxsdocument - read and write SAXS related files.
