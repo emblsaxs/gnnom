@@ -18,7 +18,8 @@ def distance(point1, point2):
     '''Find a distance using any kind of metric'''
     point1 = np.array(point1)
     point2 = np.array(point2)
-    d = np.linalg.norm(point1 - point2)
+    d = 10-np.dot(point1, point2)
+    #d = np.linalg.norm(point1 - point2)
     #d = 0 # do not convert list to numpy - no advantage in speed
     #for i in range(len(point1)):
     #    d += pow((point1[i]-point2[i]),2)
@@ -61,7 +62,7 @@ for inputFilename in inFiles:
         prop, curve   = saxsdocument.read(os.path.join(inputFolder, inputFilename))
         r    = curve['s']
         p    = curve['I']
-        inMatrix.append(p[::2])
+        inMatrix.append(p[::4])
         inCurves.append({"filename" : inputFilename, "properties" : prop, "data" : p})
     except Exception as e:
         print(e)
@@ -75,7 +76,7 @@ if (length-len(inMatrix) > 0): print(f"{length-len(inMatrix)} duplicates removed
 #pick a random curve to be the first point
 firstCurve = random.choice(inMatrix)
 inMatrix.remove(firstCurve)
-#outMatrix = []
+outMatrix = []
 outMatrix.append(firstCurve)
 for point in range(numberPoints - 1):
     print(f"{point} out of {numberPoints - 1}...")
@@ -87,10 +88,10 @@ for point in range(numberPoints - 1):
             dist = d
             pp = p
     inMatrix.remove(pp)
-    #outMatrix.append(pp)
+    outMatrix.append(pp)
     # save files
     r = np.arange(101)
-    curve = [i for i in inCurves if (i["data"][::2] == pp)][0]
+    curve = [i for i in inCurves if (i["data"][::4] == pp)][0]
     name = curve["filename"]
     prop = curve["properties"]
     pddf = curve["data"]
