@@ -99,9 +99,9 @@ for inputFilename in dataFiles:
 
     #TODO: instead of checking output number of points > 10 read model type (scalar/pddf)
     if len(pred[0]) > 10:
-        # Find Dmax: first negative point after max(p(r))
+        # Find Dmax: first negative (or zero) point after max(p(r))
         max_pddf = np.argmax(pred)
-        negIndex = np.argmax(pred[:,max_pddf:] < 0)
+        negIndex = np.argmax(pred[:,max_pddf:] <= 0)
         # Crop p(r > Dmax), nullify last point
         pred = pred[:, 0: (negIndex + max_pddf + 1)]
         pred[:,-1] = 0.0
