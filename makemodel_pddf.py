@@ -62,24 +62,40 @@ def readFiles(path, isPddf = False, firstPointIndex = 0, lastPointIndex = None):
 
 
 # Process --first and --last:
-firstPointIndex = int(args.first) - 1
-if(args.last): lastPointIndex = int(args.last)
+firstPointIndex = args.first - 1
+lastPointIndex  = args.last
 
 folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
-#folders = ["dat-c16"]
+#folders = ["dat-c16", "dat-c8"]
+
 Is   = []
 pddf = []
 # read training data and pddf
 for f in folders:
     d = os.path.join(args.dataPath,f)
-    #read training set files
-    I        = readFiles(d, False, firstPointIndex, lastPointIndex)
+    I = readFiles(d, False, firstPointIndex, lastPointIndex)
     Is.extend(I)
-    p      = readFiles(args.pddfPath, True)
+    p = readFiles(args.pddfPath, True)
     pddf.extend(p)
-    n_all     = len(Is)
+
 Is   = np.array(Is)
 pddf = np.array(pddf)
+n_all = len(Is)
+
+
+path = os.path.join(args.dataPath,folders[0])
+filesData = os.listdir(path)
+firstFile = os.path.join(path, filesData[0])
+__, cur = saxsdocument.read(firstFile)
+s = np.array(cur['s'])
+
+smin = s[firstPointIndex]
+if (args.last): smax = s[args.last - 1]
+else: smax = s[-1]
+print(f"smin {smin} smax {smax}")
+
+#rmin
+#rmax
 
 # read validation data and pddf
 if args.valData:
@@ -107,9 +123,6 @@ print(f"Total: {len(pddf)} training PDDF files")
 print(f"Total: {len(IsVal)} validation data files")
 print(f"Total: {len(pddfVal)} validation PDDF files")
     
-step = 3.921570e-003
-smin = step*firstPointIndex
-smax = step*(lastPointIndex - 1)
 
 if args.epochs:
     num_epochs = int(args.epochs)
@@ -185,6 +198,7 @@ model_json['Normalization coefficient'] = stdpddf
 model_json['smin'] = smin
 model_json['smax'] = smax
 model_json['firstPointIndex'] = firstPointIndex  # including, starts from 0
+if not lastPointIndex: lastPointIndex = len(s)
 model_json['lastPointIndex']  = lastPointIndex   # excluding
 model_json['minutesTrained']    = t   
 
