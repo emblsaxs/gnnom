@@ -82,20 +82,28 @@ Is   = np.array(Is)
 pddf = np.array(pddf)
 n_all = len(Is)
 
-
+# determine smin and smax from the first saxs file
 path = os.path.join(args.dataPath,folders[0])
 filesData = os.listdir(path)
 firstFile = os.path.join(path, filesData[0])
 __, cur = saxsdocument.read(firstFile)
-s = np.array(cur['s'])
+s = cur['s']
 
 smin = s[firstPointIndex]
 if (args.last): smax = s[args.last - 1]
 else: smax = s[-1]
 print(f"smin {smin} smax {smax}")
 
-#rmin
-#rmax
+# determine rmin and rmax from the first pddf file
+pddfData = os.listdir(args.pddfPath)
+firstFile = os.path.join(args.pddfPath, pddfData[0])
+__, cur = saxsdocument.read(firstFile)
+r = cur['s']
+
+rmin = r[0]
+rmax = r[-1]
+pddfNumberOfPoints = len(r)
+print(f"rmin {rmin} rmax {rmax}")
 
 # read validation data and pddf
 if args.valData:
@@ -200,6 +208,9 @@ model_json['smax'] = smax
 model_json['firstPointIndex'] = firstPointIndex  # including, starts from 0
 if not lastPointIndex: lastPointIndex = len(s)
 model_json['lastPointIndex']  = lastPointIndex   # excluding
+model_json['rmin'] = rmin
+model_json['rmax'] = rmax
+model_json['pddfNumberOfPoints'] = pddfNumberOfPoints
 model_json['minutesTrained']    = t   
 
 with open(model_name + ".json", "w") as json_file:
