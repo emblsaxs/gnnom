@@ -20,7 +20,7 @@ args = parser.parse_args()
 
 import keras
 import numpy as np
-import saxsdocument
+import psaxsdocument as saxsdocument
 import time
 import os
 import json
@@ -66,13 +66,20 @@ firstPointIndex = int(args.first) - 1
 if(args.last): lastPointIndex = int(args.last)
 
 folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
+#folders = ["dat-c16"]
+Is   = []
+pddf = []
 # read training data and pddf
 for f in folders:
     d = os.path.join(args.dataPath,f)
     #read training set files
-    Is        = readFiles(d, False, firstPointIndex, lastPointIndex)
-    pddf      = readFiles(args.pddfPath, True)
+    I        = readFiles(d, False, firstPointIndex, lastPointIndex)
+    Is.extend(I)
+    p      = readFiles(args.pddfPath, True)
+    pddf.extend(p)
     n_all     = len(Is)
+Is   = np.array(Is)
+pddf = np.array(pddf)
 
 # read validation data and pddf
 if args.valData:
@@ -130,6 +137,7 @@ w = [np.zeros([args.units, len(pddfMean)]), pddfMean]
 model.add(Dense(output_length, weights = w))
 
 adama = optimizers.Adam(lr=0.0001)
+#adama = optimizers.Adam(lr=0.00001)
 
 model.compile(optimizer= adama, loss='mse')
 
