@@ -67,16 +67,15 @@ lastPointIndex  = args.last
 
 folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
 #folders = ["dat-c16", "dat-c8"]
+#folders = ["."]
 
 Is   = []
 pddf = []
 # read training data and pddf
 for f in folders:
     d = os.path.join(args.dataPath,f)
-    I = readFiles(d, False, firstPointIndex, lastPointIndex)
-    Is.extend(I)
-    p = readFiles(args.pddfPath, True)
-    pddf.extend(p)
+    Is.extend(   readFiles(d, False, firstPointIndex, lastPointIndex) )
+    pddf.extend( readFiles(args.pddfPath, True) )
 
 Is   = np.array(Is)
 pddf = np.array(pddf)
@@ -105,15 +104,17 @@ rmax = r[-1]
 pddfNumberOfPoints = len(r)
 print(f"rmin {rmin} rmax {rmax}")
 
+
+
+IsVal   = []
+pddfVal = []
 # read validation data and pddf
 if args.valData:
     for f in folders:
         d = os.path.join(args.valData,f)
         #read training set files
-        IsVal        = readFiles(d, False, firstPointIndex, lastPointIndex)
-        pddfVal      = readFiles(args.valPddf, True)
-        pddfVal      = pddfVal / np.std(pddfVal)
-        n_val        = len(IsVal)
+        IsVal.extend(   readFiles(d, False, firstPointIndex, lastPointIndex) )
+        pddfVal.extend( readFiles(args.valPddf, True) )
 else:
     n_cases = int(n_all * 0.9)
     IsVal   =   Is[n_cases:n_all]
@@ -122,15 +123,14 @@ else:
     pddf    = pddf[0:n_cases]
 
 stdpddf = np.std(pddf)
-pddf    = pddf / stdpddf
-pddfVal = pddfVal/np.std(pddfVal)
+pddf    = pddf  / stdpddf
+pddfVal = pddfVal/stdpddf
 pddfMean  = np.mean(pddf, axis = 0)
 
 print(f"Total: {len(Is)} training data files")
 print(f"Total: {len(pddf)} training PDDF files")
 print(f"Total: {len(IsVal)} validation data files")
 print(f"Total: {len(pddfVal)} validation PDDF files")
-    
 
 if args.epochs:
     num_epochs = int(args.epochs)
@@ -157,17 +157,19 @@ for layer in range(args.layers - 1):
 w = [np.zeros([args.units, len(pddfMean)]), pddfMean]
 model.add(Dense(output_length, weights = w))
 
+
 adama = optimizers.Adam(lr=0.0001)
 #adama = optimizers.Adam(lr=0.00001)
 
 model.compile(optimizer= adama, loss='mse')
+#model.compile(optimizer='Adam', loss='mse')
 
 model_name = f"gnnom-pddf-{args.prefix}-e{num_epochs}-u{args.units}-l{args.layers}"
 
 if(args.weightsPath):
     model.load_weights(args.weightsPath)
 
-train_history = model.fit(Is, pddf, epochs=num_epochs,  batch_size=n_all,
+train_history = model.fit(Is, pddf, epochs=num_epochs,  batch_size=32,
                           validation_data =  (IsVal, pddfVal),
                           callbacks = [ModelCheckpoint(model_name + '.h5', save_best_only=True)])
 
