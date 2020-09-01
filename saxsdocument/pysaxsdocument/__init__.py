@@ -56,6 +56,7 @@ def read(fileName):
                 except Exception as e:
                     print(f"Warning: for file {fileName}: {e}")
                     pass
+        doc.curve = [x for x in doc.curve if x != []]
         return doc
     except Exception as e:
         print(f"Cannot open file {fileName}: {e}")
@@ -69,31 +70,26 @@ def write(path, curve, prop = {}, nm = True):
     head = ""
     foot = ""
     headerKeys = ["SASBDB code"]
-    try:
-        s = np.array(curve[0]).astype(np.float64)
-        if nm == False: s = s * 10
-        I = np.array(curve[1]).astype(np.float64)
-        if prop:
-            for hk in headerKeys:
-                if hk in prop:
-                    st = prop[hk]
-                    for ss in st:
-                        head += f"{hk} : {ss}"
-            for key, val in prop.items():
-                #if key not in headerKeys:
-                for v in val:
-                    foot += f"{key} : {v}"
-        if len(curve[2]) > 0 and len(curve[3]) == 0:
-            Err = np.array(curve[2]).astype(np.float64)
-            out = np.vstack((s, I, Err))
-        elif len(curve[2]) > 0 and len(curve[3]) > 0:
-            Err = np.array(curve[2]).astype(np.float64)
-            Fit = np.array(curve[3]).astype(np.float64)
-            out = np.vstack((s, I, Err, Fit))
-        elif len(curve[2]) == 0 and len(curve[3]) == 0:
-            out = np.vstack((s, I))
-        np.savetxt(path, np.transpose(out), fmt="%.8e", header=head, footer=foot, comments = '')
+    s = np.array(curve[0]).astype(np.float64)
+    if nm == False: s = s * 10
+    I = np.array(curve[1]).astype(np.float64)
+    # split properties on those who go to the header (headerKeys) and the rest that go to the footer
+    if prop:
+        for hk in headerKeys:
+            if hk in prop: head += f"{hk} : {prop[hk]}"
+        for key, val in prop.items():
+            if key not in headerKeys: foot += f"{key} : {val}\n"
+    if len(curve) == 2:
+        out = np.vstack((s, I))
+    elif len(curve) == 3:
+        Err = np.array(curve[2]).astype(np.float64)
+        out = np.vstack((s, I, Err))
+    elif len(curve) == 4:
+        Err = np.array(curve[2]).astype(np.float64)
+        Fit = np.array(curve[3]).astype(np.float64)
+        out = np.vstack((s, I, Err, Fit))
 
-    except Exception as e:
-        print(f"Could not write file {path}: {e}")
+    np.savetxt(path, np.transpose(out), fmt="%.8e", header=head, footer=foot, comments = '')
 
+    #except Exception as e:
+    #    print(f"Could not write file {path}: {e}")
