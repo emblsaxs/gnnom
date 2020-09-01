@@ -62,15 +62,16 @@ def read(fileName):
         pass
 
 
-def write(path, curve, prop = {}):
+def write(path, curve, prop = {}, nm = True):
     '''Writes a SAXS curve, takes: (1) path where to write a file, can not create a folder
     (2) curve as list of lists [[s][I][Err}[Fit] and properties in arbitrarory form as
     the python dictionary'''
     head = ""
     foot = ""
-    headerKeys = ["Sample description", "Sample", "Parent(s)"]
+    headerKeys = ["SASBDB code"]
     try:
         s = np.array(curve[0]).astype(np.float64)
+        if nm == False: s = s * 10
         I = np.array(curve[1]).astype(np.float64)
         if prop:
             for hk in headerKeys:
