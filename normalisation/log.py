@@ -1,10 +1,11 @@
-'''
+"""
 Normalisation for SAXS data used for machine learning applications
-'''
+"""
 import numpy as np
 
 
 def normalise(Is, subtractor=None, divisor=None):
+    """Normalise data as log(x) - <log(x)> / std(log(X)"""
     Is = np.log10(Is)
     if subtractor is None: subtractor = np.mean(Is, axis=0)
     Is = Is - subtractor
@@ -16,6 +17,10 @@ def normalise(Is, subtractor=None, divisor=None):
 
 
 def unnormalise(Is, mean, std):
+    """
+    Mean and std arrays must be the same as used for data
+    normalisation to properly restore your data!
+    """
     # if len(np.shape(Is)) == 2:
     #     for num1, I in enumerate(Is):
     #         for num2, v in enumerate(I):
