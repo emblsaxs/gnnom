@@ -24,7 +24,8 @@ from keras.callbacks import ModelCheckpoint  # , TensorBoard
 from keras import optimizers  # , losses
 from keras.models import Sequential
 from keras.layers import Dense, Activation
-from normalisation.log import normalise  # , unnormalise
+from normalisation.logarithm import normalise  # , unnormalise
+from utils.crysollog import parseCrysolLogs, readDatsAndLogs
 
 import matplotlib
 
@@ -60,75 +61,7 @@ for f in folders:
     for ff in valNames: valFiles.append(os.path.join(v, ff))
 
 
-# logFiles.extend(os.listdir(args.logPath))
-
-def parseCrysolLogs(logFiles, par):
-    parameters = []
-    outCsv = []
-    for f in logFiles:
-        # l    = file#os.path.join(args.logPath,file)
-        file = os.path.basename(f)
-        # print(f)
-        lines = [line.strip() for line in open(f)]
-        rgdmaxmw = []
-        # Read 'Molecular Weight: 0.4330E+06':
-        if par not in ["rg", "dmax", "mw"]:
-            print(f"Wrong parameter {par}! Please enter rg, dmax or mw")
-        for line in lines:
-            if par == "rg":
-                if "slope" in line:
-                    rg = float(line.split()[-1])
-                    rgdmaxmw.append(rg)
-                    parameters.append(rgdmaxmw)
-                    outCsv.append(file[:-4] + ', ' + str(round(rg, 3)))
-                    break
-            if par == "dmax":
-                if "diameter" in line:
-                    dmax = float(line.split()[-1])
-                    rgdmaxmw.append(dmax)
-                    parameters.append(rgdmaxmw)
-                    outCsv.append(file[:-4] + ', ' + str(round(dmax, 3)))
-                    break
-            if par == "mw":
-                if "Weight" in line:
-                    mw = float(line.split()[2]) / 1000.0
-                    # print(f"{file}: {mw} kDa")
-                    rgdmaxmw.append(mw)
-                    parameters.append(rgdmaxmw)
-                    outCsv.append(file[:-4] + ', ' + str(round(mw, 3)))
-                    break
-
-    return parameters, outCsv
-
-
-def readDatsAndLogs(dataFiles, logPath):
-    Is = []
-    logFiles = []
-    for file in dataFiles:
-        name = os.path.basename(file)
-        # path = os.path.join(args.dataPath, file)
-        if os.path.isdir(file): continue
-        n = int(name[-5]) + 1
-        log = name[:-6] + "_pdb" + str(n) + ".log"
-        # log = name[:-4] + ".log"
-        l = os.path.join(logPath, log)
-        if os.path.exists(l) == False:
-            dataFiles.remove(file)
-            print(f"No logs: removed from training {file}")
-            continue
-        cur, prop = saxsdocument.read(file)
-        Is.append(cur['I'][firstPointIndex:lastPointIndex])
-        logFiles.append(l)
-    return Is, logFiles
-
-# dataFiles.sort()
-# logFiles.sort()
-
-# n_all   = len(dataFiles)
-# n_cases = int(valFiles)
-
 print("Reading data files...")
-
 # process --first and --last
 cur, __ = saxsdocument.read(dataFiles[0])
 dat = cur['s']
@@ -144,14 +77,10 @@ firstPointIndex = int(args.first) - 1
 
 smin = dat[firstPointIndex]
 smax = dat[lastPointIndex]
-# print(f"smin = {smin}")
-# print(f"smax = {smax}")
-# exit()
-Is, logFiles = readDatsAndLogs(dataFiles, logPath)
-IsVal, logFilesVal = readDatsAndLogs(valFiles, logPath)
 
-# averageIs = np.mean(Is, axis = 0)
-# Is = Is - averageIs
+Is, logFiles = readDatsAndLogs(dataFiles, logPath, firstPointIndex, lastPointIndex)
+IsVal, logFilesVal = readDatsAndLogs(valFiles, logPath, firstPointIndex, lastPointIndex)
+
 print(f"Number of data files found: {len(dataFiles)}")
 print(f"Number of log  files found: {len(logFiles)}")
 print(f"Number of validation files found: {len(valFiles)}")
@@ -175,7 +104,6 @@ print(outCsvPath + " is written.")
 # Perceptron neural network
 # tensorboard = keras.callbacks.TensorBoard(log_dir='./Graph', histogram_freq=0, write_graph=True, write_images=True)
 
-####
 # Number of points in a SAXS curve
 N = np.shape(Is)[1]
 
@@ -208,38 +136,35 @@ print(f"Mean {par}: {avrgMW}")
 w = [np.zeros([args.units, 1]), np.array([avrgMW])]
 model.add(Dense(output, weights = w))
 model.add(Activation('relu'))
-#model.add(Dense(output))
+# model.add(Dense(output))
 adama = optimizers.Adam(lr=0.0001)
 
-model.compile(optimizer= adama, loss='mse')
+model.compile(optimizer=adama, loss='mse')
 
 model_name = f"gnnom-{par}-0.1-5-e{args.epochs}-u{args.units}"
 
-if(args.weightsPath):
+if (args.weightsPath):
     model.load_weights(args.weightsPath)
+if np.isnan(Is).any():
+    print("Is contain nans")
+    exit()
+if np.isnan(IsVal).any():
+    print("IsVal contain nans")
+    exit()
+if np.isnan(parameters).any():
+    print("parameters contain nans")
+    exit()
+if np.isnan(parametersVal).any():
+    print("parametersVal contain nans")
+    exit()
 
-train_history = model.fit(np.array(Is), np.array(parameters), epochs=num_epochs,  batch_size=len(dataFiles),
-                          validation_data =  (np.array(IsVal), np.array(parametersVal)),
-                          callbacks = [ModelCheckpoint(model_name + '.h5', save_best_only=True)])
-#train_history = model.fit(np.array(Is[0:n_cases]), np.array(parameters[0:n_cases]), epochs=num_epochs,  batch_size=n_all,
-#                          validation_data =  (np.array(Is[n_cases:n_all]), np.array(parameters[n_cases:n_all])),
-#                          callbacks = [ModelCheckpoint(model_name + '.h5', save_best_only=True)])
+train_history = model.fit(np.array(Is), np.array(parameters), epochs=num_epochs, batch_size=len(dataFiles),
+                          validation_data=(np.array(IsVal), np.array(parametersVal)),
+                          callbacks=[ModelCheckpoint(model_name + '.h5', save_best_only=True)])
 
 loss = train_history.history['loss']
 val_loss = train_history.history['val_loss']
-'''
-plt.semilogy(loss)
-plt.semilogy(val_loss)
-plt.ylabel('loss')
-plt.xlabel('epoch')
-plt.legend(['training loss: ' +str(len(Is[0:n_cases])) + ' frames',
-            'validation loss: ' + str(len(Is[n_cases:n_all])) + ' frames'])
-plt.title('final loss: ' + str(train_history.history['loss'][-1]) +
-          '\nfinal val_loss: ' + str(train_history.history['val_loss'][-1]))
 
-plt.savefig('loss-' + model_name + '.png', format='png', dpi=250)
-plt.clf()
-'''
 # Confirm that it works
 data = np.arange(N)
 
@@ -275,4 +200,3 @@ with open(model_name + ".json", "w") as json_file:
 # model.save_weights(model_name + ".h5") #last but not best weights
 print("Saved model " + model_name + " to disk")
 
-#print("average Rg over the learning set:   " + str(avrgRg))

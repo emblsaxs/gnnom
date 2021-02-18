@@ -14,7 +14,7 @@ import saxsdocument
 import numpy as np
 import os
 import json
-from normalisation.log import normalise  # , unnormalise
+from normalisation.logarithm import normalise  # , unnormalise
 
 jsonFilename  = args.architecture
 h5Filename    = args.weights
