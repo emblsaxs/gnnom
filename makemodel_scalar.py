@@ -39,19 +39,17 @@ import time
 
 start = time.time()
 
-num_epochs    = args.epochs
-par           = args.parameter
+num_epochs = args.epochs
+par = args.parameter
 
-#valPath       = args.valPath
-dataPath      = args.dataPath
-logPath      = args.logPath
-dataFiles     = []
-valFiles      = []
-logFiles      = []
-logFilesVal   = []
+# valPath       = args.valPath
+dataPath = args.dataPath
+logPath = args.logPath
+dataFiles = []
+valFiles = []
 
-# folders = ["dat-c025"]#, "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
-folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
+folders = ["dat-c025"]  # , "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
+# folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
 
 for f in folders:
     d = os.path.join(dataPath, "training", f)
@@ -64,7 +62,7 @@ for f in folders:
 
 # logFiles.extend(os.listdir(args.logPath))
 
-def parseCrysolLogs(logFiles):
+def parseCrysolLogs(logFiles, par):
     parameters = []
     outCsv = []
     for f in logFiles:
@@ -103,6 +101,26 @@ def parseCrysolLogs(logFiles):
     return parameters, outCsv
 
 
+def readDatsAndLogs(dataFiles, logPath):
+    Is = []
+    logFiles = []
+    for file in dataFiles:
+        name = os.path.basename(file)
+        # path = os.path.join(args.dataPath, file)
+        if os.path.isdir(file): continue
+        n = int(name[-5]) + 1
+        log = name[:-6] + "_pdb" + str(n) + ".log"
+        # log = name[:-4] + ".log"
+        l = os.path.join(logPath, log)
+        if os.path.exists(l) == False:
+            dataFiles.remove(file)
+            print(f"No logs: removed from training {file}")
+            continue
+        cur, prop = saxsdocument.read(file)
+        Is.append(cur['I'][firstPointIndex:lastPointIndex])
+        logFiles.append(l)
+    return Is, logFiles
+
 # dataFiles.sort()
 # logFiles.sort()
 
@@ -110,9 +128,6 @@ def parseCrysolLogs(logFiles):
 # n_cases = int(valFiles)
 
 print("Reading data files...")
-
-Is = []
-IsVal = []
 
 # process --first and --last
 cur, __ = saxsdocument.read(dataFiles[0])
@@ -132,40 +147,11 @@ smax = dat[lastPointIndex]
 # print(f"smin = {smin}")
 # print(f"smax = {smax}")
 # exit()
-for file in dataFiles:
-    name = os.path.basename(file)
-    # path = os.path.join(args.dataPath, file)
-    if os.path.isdir(file): continue
-    n = int(name[-5]) + 1
-    log = name[:-6] + "_pdb" + str(n) + ".log"
-    # log = name[:-4] + ".log"
-    l = os.path.join(logPath, log)
-    if os.path.exists(l) == False:
-        dataFiles.remove(file)
-        print(f"No logs: removed from training {file}")
-        continue
-    cur, prop = saxsdocument.read(file)
-    Is.append(cur['I'][firstPointIndex:lastPointIndex])
-    logFiles.append(l)
-
-for file in valFiles:
-    name = os.path.basename(file)
-    # path = os.path.join(args.dataPath, file)
-    if os.path.isdir(file): continue
-    n = int(name[-5]) + 1
-    log = name[:-6] + "_pdb" + str(n) + ".log"
-    # log = name[:-4] + ".log"
-    l = os.path.join(logPath, log)
-    if os.path.exists(l) == False:
-        valFiles.remove(file)
-        print(f"No logs: removed from validation {file}")
-        continue
-    cur, prop = saxsdocument.read(file)
-    IsVal.append(cur['I'][firstPointIndex:lastPointIndex])
-    logFilesVal.append(l)
+Is, logFiles = readDatsAndLogs(dataFiles, logPath)
+IsVal, logFilesVal = readDatsAndLogs(valFiles, logPath)
 
 # averageIs = np.mean(Is, axis = 0)
-#Is = Is - averageIs
+# Is = Is - averageIs
 print(f"Number of data files found: {len(dataFiles)}")
 print(f"Number of log  files found: {len(logFiles)}")
 print(f"Number of validation files found: {len(valFiles)}")
@@ -173,11 +159,11 @@ print(f"Number of validation log  files found: {len(logFilesVal)}")
 print("...done.")
 
 print("Parsing data log files...")
-parameters, outCsv = parseCrysolLogs(logFiles)
+parameters, outCsv = parseCrysolLogs(logFiles, par)
 print("...done.")
 
 print("Parsing validation log files...")
-parametersVal, outCsvVal = parseCrysolLogs(logFilesVal)
+parametersVal, outCsvVal = parseCrysolLogs(logFilesVal, par)
 outCsv.extend(outCsvVal)
 print("...done.")
 
