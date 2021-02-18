@@ -50,6 +50,7 @@ valFiles      = []
 logFiles      = []
 logFilesVal   = []
 
+# folders = ["dat-c025"]#, "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
 folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
 
 for f in folders:
@@ -59,10 +60,51 @@ for f in folders:
     valNames = os.listdir(v)
     for ff in fileNames: dataFiles.append(os.path.join(d, ff))
     for ff in valNames: valFiles.append(os.path.join(v, ff))
-#logFiles.extend(os.listdir(args.logPath))
 
-#dataFiles.sort()
-#logFiles.sort()
+
+# logFiles.extend(os.listdir(args.logPath))
+
+def parseCrysolLogs(logFiles):
+    parameters = []
+    outCsv = []
+    for f in logFiles:
+        # l    = file#os.path.join(args.logPath,file)
+        file = os.path.basename(f)
+        # print(f)
+        lines = [line.strip() for line in open(f)]
+        rgdmaxmw = []
+        # Read 'Molecular Weight: 0.4330E+06':
+        if par not in ["rg", "dmax", "mw"]:
+            print(f"Wrong parameter {par}! Please enter rg, dmax or mw")
+        for line in lines:
+            if par == "rg":
+                if "slope" in line:
+                    rg = float(line.split()[-1])
+                    rgdmaxmw.append(rg)
+                    parameters.append(rgdmaxmw)
+                    outCsv.append(file[:-4] + ', ' + str(round(rg, 3)))
+                    break
+            if par == "dmax":
+                if "diameter" in line:
+                    dmax = float(line.split()[-1])
+                    rgdmaxmw.append(dmax)
+                    parameters.append(rgdmaxmw)
+                    outCsv.append(file[:-4] + ', ' + str(round(dmax, 3)))
+                    break
+            if par == "mw":
+                if "Weight" in line:
+                    mw = float(line.split()[2]) / 1000.0
+                    # print(f"{file}: {mw} kDa")
+                    rgdmaxmw.append(mw)
+                    parameters.append(rgdmaxmw)
+                    outCsv.append(file[:-4] + ', ' + str(round(mw, 3)))
+                    break
+
+    return parameters, outCsv
+
+
+# dataFiles.sort()
+# logFiles.sort()
 
 # n_all   = len(dataFiles)
 # n_cases = int(valFiles)
@@ -131,80 +173,15 @@ print(f"Number of validation log  files found: {len(logFilesVal)}")
 print("...done.")
 
 print("Parsing data log files...")
-parameters = []
-outCsv     = []
-for f in logFiles:
-    #l    = file#os.path.join(args.logPath,file)
-    file = os.path.basename(f)
-    #print(f)
-    lines = [line.strip() for line in open(f)]
-    rgdmaxmw = []
-    # Read 'Molecular Weight: 0.4330E+06':
-    if par not in ["rg", "dmax", "mw"] : 
-        print(f"Wrong parameter {par}! Please enter rg, dmax or mw")
-    for line in lines:
-        if par == "rg":
-            if "slope" in line:
-                rg = float(line.split()[-1])
-                rgdmaxmw.append(rg)
-                parameters.append(rgdmaxmw)
-                outCsv.append(file[:-4] + ', ' + str(round(rg, 3)))
-                break
-        if par == "dmax":
-            if "diameter" in line:
-                dmax = float(line.split()[-1])
-                rgdmaxmw.append(dmax)
-                parameters.append(rgdmaxmw)
-                outCsv.append(file[:-4] + ', ' + str(round(dmax, 3)))
-                break         
-        if par == "mw":
-            if "Weight" in line:
-                mw = float(line.split()[2])/1000.0
-                #print(f"{file}: {mw} kDa")
-                rgdmaxmw.append(mw)
-                parameters.append(rgdmaxmw)
-                outCsv.append(file[:-4] + ', ' + str(round(mw, 3)))
-                break
-
+parameters, outCsv = parseCrysolLogs(logFiles)
 print("...done.")
 
 print("Parsing validation log files...")
-parametersVal = []
-for f in logFilesVal:
-    #l = file#os.path.join(args.logPath,file)
-    file = os.path.basename(f)
-    lines = [line.strip() for line in open(f)]
-    rgdmaxmwVal = []
-    # Read 'Molecular Weight: 0.4330E+06':
-    if par not in ["rg", "dmax", "mw"] : 
-        print(f"Wrong parameter {par}! Please enter rg, dmax or mw")
-    for line in lines:
-        if par == "rg":
-            if "slope" in line:
-                rg = float(line.split()[-1])
-                rgdmaxmwVal.append(rg)
-                parametersVal.append(rgdmaxmwVal)
-                outCsv.append(file[:-4] + ', ' + str(round(rg, 3)))
-                break
-        if par == "dmax":
-            if "diameter" in line:
-                dmax = float(line.split()[-1])
-                rgdmaxmwVal.append(dmax)
-                parametersVal.append(rgdmaxmwVal)
-                outCsv.append(file[:-4] + ', ' + str(round(dmax, 3)))
-                break         
-        if par == "mw":
-            if "Weight" in line:
-                mw = float(line.split()[2])/1000.0
-                #print(f"{file}: {mw} kDa")
-                rgdmaxmwVal.append(mw)
-                parametersVal.append(rgdmaxmwVal)
-                outCsv.append(file[:-4] + ', ' + str(round(mw, 3)))
-                break
-
+parametersVal, outCsvVal = parseCrysolLogs(logFilesVal)
+outCsv.extend(outCsvVal)
 print("...done.")
- 
-#save ground true values to csv
+
+# save ground true values to csv
 outCsvPath = f"ground-{par}-{len(logFiles)}.csv"
 np.savetxt(outCsvPath, outCsv, delimiter=",", fmt='%s')
 print(outCsvPath + " is written.")
