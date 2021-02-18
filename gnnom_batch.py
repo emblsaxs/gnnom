@@ -1,5 +1,4 @@
 #!/usr/bin/python
-# this is a test commit
 import argparse
 
 parser = argparse.ArgumentParser(description='Apply NN model in batch regime.')
@@ -15,6 +14,7 @@ import saxsdocument
 import numpy as np
 import os
 import json
+from normalisation.log import normalise  # , unnormalise
 
 jsonFilename  = args.architecture
 h5Filename    = args.weights
@@ -27,20 +27,22 @@ try:
     jsonFile = open(jsonFilename, 'r')
     loadedModelJson = jsonFile.read()
     json_data = json.loads(loadedModelJson)
-    if('Normalization coefficient' in json_data):
-        stdpddf = (float)(json_data['Normalization coefficient'])
-    #smin          = (float)(json_data['smin'])
-    #smax          = (float)(json_data['smax'])
-    #firstPointIndex = (int)(json_data['firstPointIndex'])
-    #lastPointIndex  = (int)(json_data['lastPointIndex'])
-    
+    if 'Normalization coefficient' in json_data:
+        stdpddf = float(json_data['Normalization coefficient'])
+    meanIs = float(json_data['meanIs'])
+    stdIs = float(json_data['stdIs'])
+    # smin          = (float)(json_data['smin'])
+    # smax          = (float)(json_data['smax'])
+    # firstPointIndex = (int)(json_data['firstPointIndex'])
+    # lastPointIndex  = (int)(json_data['lastPointIndex'])
+
     jsonFile.close()
     loadedModel = model_from_json(loadedModelJson)
     # load weights into new model
     loadedModel.load_weights(h5Filename)
     inputLength = loadedModel.input_shape[1]  # I(s) points
     print("Expected input: " + str(inputLength) + " points.")
-    #outputLength = loadedModel.output_shape[1]  # p(r) points
+    # outputLength = loadedModel.output_shape[1]  # p(r) points
 
     print("Model loaded. Yeah!")
 
@@ -60,13 +62,14 @@ dataFiles = os.listdir(args.dataPath)
 dataFiles.sort()
 for inputFilename in dataFiles:
     try:
-        __, cur  = saxsdocument.read(os.path.join(inputFolder, inputFilename))
-        s  = cur['s']
+        cur, __ = saxsdocument.read(os.path.join(inputFolder, inputFilename))
+        s = cur['s']
         Is = cur['I']
 
     except Exception as e:
         print(f"Error: Could not read {inputFilename}:")
         print(e)
+        continue
 
     #if s[0] != 0:
     #    # sew missing head
@@ -94,7 +97,7 @@ for inputFilename in dataFiles:
     #if round(s[lastPointIndex - 1], 3) != round(smax, 3):
     #    print(f"{inputFilename}: point {lastPointIndex - 1} has s={s[lastPointIndex]}, expected s={smax}")
     #    exit()
-
+    Is, __, __ = normalise(Is, meanIs, stdIs)
     test = np.array([Is, ])
     pred = loadedModel.predict(test)
 
@@ -102,16 +105,16 @@ for inputFilename in dataFiles:
     if len(pred[0]) > 10:
         # Find Dmax: first negative (or zero) point after max(p(r))
         max_pddf = np.argmax(pred)
-        negIndex = np.argmax(pred[:,max_pddf:] <= 0)
+        negIndex = np.argmax(pred[:, max_pddf:] <= 0)
         # Crop p(r > Dmax), nullify last point
         pred = pred[:, 0: (negIndex + max_pddf + 1)]
-        pred[:,-1] = 0.0
+        pred[:, -1] = 0.0
 
         r = np.arange(0.0, len(pred[0]) * 0.25, 0.25)
         outCsv.append(inputFilename[:-4] + ', ' + str(round(r[-1], 3)))
         # print(f"{len(r)} - {len(pred[0])} - {r[-1]}") # DEBUG
         pddf_predicted = np.vstack((r, stdpddf * pred[0]))
-        np.savetxt(inputFilename[:-4], np.transpose(pddf_predicted), fmt = "%.8e")
+        np.savetxt(inputFilename[:-4], np.transpose(pddf_predicted), fmt="%.8e")
 
     else:
         for number in pred[0]:
@@ -121,4 +124,4 @@ if outCsvPath != "":
     np.savetxt(outCsvPath, outCsv, delimiter=",", fmt='%s')
     print(outCsvPath + " is written.")
 else:
-    print ("\n".join(outCsv))
+    print("\n".join(outCsv))

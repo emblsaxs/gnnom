@@ -1,31 +1,32 @@
 #!/usr/bin/python
-import keras
-from keras.models import model_from_json
 import json
-import saxsdocument
-import numpy as np
-import sys
 import math
+import sys
+
+import numpy as np
+from keras.models import model_from_json
+
+import saxsdocument
 
 # Call like this:
 # python gnnom.py gnnom.json gnnom.h5 inputfile.dat 2.85 /(Rg)
-json_filename  = sys.argv[1]
-h5_filename    = sys.argv[2]
+json_filename = sys.argv[1]
+h5_filename = sys.argv[2]
 input_filename = sys.argv[3]
 Rg = (float)(sys.argv[4])
-input_length   = 113 # I(s) points
-output_length  = 301 # p(r) points
-NN_smin = 0.01176470 # 1/A
+input_length = 113  # I(s) points
+output_length = 301  # p(r) points
+NN_smin = 0.01176470  # 1/A
 norm_coef = 1.0
 
-
 try:
-    doc  = saxsdocument.read(input_filename)
-    dat  = np.transpose(np.array(doc.curve[0]))
-    s  = dat[0]
+    doc = saxsdocument.read(input_filename)
+    dat = np.transpose(np.array(doc.curve[0]))
+    s = dat[0]
     Is = dat[1]
 except:
     print("Error: Could not read input data")
+    exit()
 
 # sew missing head
 if NN_smin < s[0]:

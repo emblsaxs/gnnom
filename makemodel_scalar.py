@@ -4,36 +4,36 @@
 import argparse
 
 parser = argparse.ArgumentParser(description='Make NN model - arguments and options.')
-parser.add_argument('dataPath',    metavar='data',   type=str, help='path to the training data folder')
-parser.add_argument('logPath',     metavar='logs',   type=str, help='path to the training log folder')
-#parser.add_argument('valPath',     metavar='val', default = "", type=str, help='path to the validation data folder')
-parser.add_argument('epochs',  metavar='epochs', type=int, help='number of epochs')
-parser.add_argument('parameter',   metavar='parameter', type=str, help='mw/dmax/rg')
-parser.add_argument('--units', type=int,   default=40, help='number of units in the hidden layer (default: 40)')
-parser.add_argument('--first', type=int,   default=1,  help='index of the first point to use (default: 1)')
-parser.add_argument('--last',  type=int,   default=None, help='index of the last point to use (default: use all)')
+parser.add_argument('dataPath', metavar='data', type=str, help='path to the root data folder')
+parser.add_argument('logPath', metavar='logs', type=str, help='path to the log folder')
+# parser.add_argument('valPath',     metavar='val', default = "", type=str, help='path to the validation data folder')
+parser.add_argument('epochs', metavar='epochs', type=int, help='number of epochs')
+parser.add_argument('parameter', metavar='parameter', type=str, help='mw/dmax/rg')
+parser.add_argument('--units', type=int, default=40, help='number of units in the hidden layer (default: 40)')
+parser.add_argument('--first', type=int, default=1, help='index of the first point to use (default: 1)')
+parser.add_argument('--last', type=int, default=None, help='index of the last point to use (default: use all)')
 parser.add_argument('--weightsPath', '-w', default=None, type=str, help='path to the h5 file')
 
 args = parser.parse_args()
 
-
-import keras
 import numpy as np
 import saxsdocument
 import os
 import json
-from keras.callbacks import TensorBoard, ModelCheckpoint
-from keras import losses, optimizers
+from keras.callbacks import ModelCheckpoint  # , TensorBoard
+from keras import optimizers  # , losses
 from keras.models import Sequential
 from keras.layers import Dense, Activation
+from normalisation.log import normalise  # , unnormalise
 
 import matplotlib
+
 matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 
-#np.random.seed(5)
-#tf.random.set_seed(5)
+# np.random.seed(5)
+# tf.random.set_seed(5)
 
 import time
 
@@ -50,55 +50,57 @@ valFiles      = []
 logFiles      = []
 logFilesVal   = []
 
-folders = ["dat-c025-norm-i0", "dat-c05-norm-i0", "dat-c1-norm-i0", "dat-c2-norm-i0", "dat-c4-norm-i0", "dat-c8-norm-i0", "dat-c16-norm-i0"]
+folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
 
 for f in folders:
-    d = os.path.join(dataPath+f,"dat")
-    v = os.path.join(dataPath+f,"validation")
+    d = os.path.join(dataPath, "training", f)
+    v = os.path.join(dataPath, "validation", f)
     fileNames = os.listdir(d)
-    valNames  = os.listdir(v)
-    for ff in fileNames: dataFiles.append(dataPath+f+"/dat/"+ff)
-    for ff in valNames: valFiles.append(dataPath+f+"/validation/"+ff)
+    valNames = os.listdir(v)
+    for ff in fileNames: dataFiles.append(os.path.join(d, ff))
+    for ff in valNames: valFiles.append(os.path.join(v, ff))
 #logFiles.extend(os.listdir(args.logPath))
 
 #dataFiles.sort()
 #logFiles.sort()
 
-#n_all   = len(dataFiles)
-#n_cases = int(valFiles)
+# n_all   = len(dataFiles)
+# n_cases = int(valFiles)
 
 print("Reading data files...")
 
-Is     = []
-IsVal  = []
+Is = []
+IsVal = []
 
 # process --first and --last
-__, cur  = saxsdocument.read(dataFiles[0])
-dat  = cur['s']
-
-if(int(args.last) > len(dat)):
-    print(f"--last must be less or equal to the number of points in data files: {args.last}")
-    exit()
+cur, __ = saxsdocument.read(dataFiles[0])
+dat = cur['s']
+if args.last:
+    if (int(args.last) > len(dat)):
+        print(f"--last must be less or equal to the number of points in data files: {args.last}")
+        exit()
+    lastPointIndex = int(args.last)
+else:
+    lastPointIndex = len(dat) - 1
 
 firstPointIndex = int(args.first) - 1
-if(args.last): lastPointIndex = int(args.last)
-    
+
 smin = dat[firstPointIndex]
 smax = dat[lastPointIndex]
-print(f"smin = {smin}")
-print(f"smax = {smax}")
-#exit()
+# print(f"smin = {smin}")
+# print(f"smax = {smax}")
+# exit()
 for file in dataFiles:
     name = os.path.basename(file)
-    #path = os.path.join(args.dataPath, file)
+    # path = os.path.join(args.dataPath, file)
     if os.path.isdir(file): continue
     log = name[:-4] + ".log"
-    l   = os.path.join(logPath,log)
-    if os.path.exists(l) == False: 
+    l = os.path.join(logPath, log)
+    if os.path.exists(l) == False:
         dataFiles.remove(file)
         print(f"No logs: removed from training {file}")
         continue
-    prop, cur  = saxsdocument.read(file)
+    cur, prop = saxsdocument.read(file)
     Is.append(cur['I'][firstPointIndex:lastPointIndex])
     logFiles.append(l)
 
@@ -112,11 +114,11 @@ for file in valFiles:
         valFiles.remove(file)
         print(f"No logs: removed from validation {file}")
         continue
-    prop, cur  = saxsdocument.read(file)
+    cur, prop = saxsdocument.read(file)
     IsVal.append(cur['I'][firstPointIndex:lastPointIndex])
     logFilesVal.append(l)
 
-averageIs = np.mean(Is, axis = 0)
+# averageIs = np.mean(Is, axis = 0)
 #Is = Is - averageIs
 print(f"Number of data files found: {len(dataFiles)}")
 print(f"Number of log  files found: {len(logFiles)}")
@@ -204,7 +206,7 @@ np.savetxt(outCsvPath, outCsv, delimiter=",", fmt='%s')
 print(outCsvPath + " is written.")
 
 # Perceptron neural network
-#tensorboard = keras.callbacks.TensorBoard(log_dir='./Graph', histogram_freq=0, write_graph=True, write_images=True)
+# tensorboard = keras.callbacks.TensorBoard(log_dir='./Graph', histogram_freq=0, write_graph=True, write_images=True)
 
 ####
 # Number of points in a SAXS curve
@@ -213,14 +215,17 @@ N = np.shape(Is)[1]
 # Rg, Dmax, MW
 output = np.shape(parameters)[1]
 
+# Normalise SAXS input
+Is, meanIs, stdIs = normalise(Is)
+IsVal, __, __ = normalise(IsVal, meanIs, stdIs)
 
 model = Sequential()
 # first layer
-#he = np.sqrt(0.06/N)
-#model.add(Dense(args.units, input_dim=N, weights = [np.random.uniform(0,he,[args.units, N])]))
+# he = np.sqrt(0.06/N)
+# model.add(Dense(args.units, input_dim=N, weights = [np.random.uniform(0,he,[args.units, N])]))
 model.add(Dense(args.units, input_dim=N, use_bias=True, kernel_initializer='he_uniform'))
-#model.add(Dense(input_length, weights = [np.random.uniform(-he,he,[args.bottleneck_units, input_length]), averageIs]))
-#model.add(Dense(input_length, weights = [np.zeros([args.hidden_units, input_length]), averageIs]))
+# model.add(Dense(input_length, weights = [np.random.uniform(-he,he,[args.bottleneck_units, input_length]), averageIs]))
+# model.add(Dense(input_length, weights = [np.zeros([args.hidden_units, input_length]), averageIs]))
 model.add(Activation('relu'))
 
 # second layer
@@ -282,24 +287,25 @@ scores = model.evaluate(np.array(IsVal), np.array(parametersVal), verbose=0)
 print(model.metrics_names)
 print(scores)
 
- 
 # serialize model to JSON
 model_str = model.to_json()
 model_json = json.loads(model_str)
 model_json['smin'] = smin
 model_json['smax'] = smax
 model_json['firstPointIndex'] = firstPointIndex  # including, starts from 0
-model_json['lastPointIndex']  = lastPointIndex   # excluding
-#model_json['KratkyDegree']    = args.degree
+model_json['lastPointIndex'] = lastPointIndex  # excluding
+model_json['meanIs'] = meanIs
+model_json['stdIs'] = stdIs
+# model_json['KratkyDegree']    = args.degree
 # compute elapsed time
 end = time.time()
-t   = str(round((end - start) / 60,2))
-model_json['minutesTrained']    = t  
+t = str(round((end - start) / 60, 2))
+model_json['minutesTrained'] = t
 
 with open(model_name + ".json", "w") as json_file:
     json_file.write(json.dumps(model_json))
 # serialize weights to HDF5
-#model.save_weights(model_name + ".h5") #last but not best weights
+# model.save_weights(model_name + ".h5") #last but not best weights
 print("Saved model " + model_name + " to disk")
 
 #print("average Rg over the learning set:   " + str(avrgRg))
