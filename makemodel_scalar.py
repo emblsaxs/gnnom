@@ -94,7 +94,9 @@ for file in dataFiles:
     name = os.path.basename(file)
     # path = os.path.join(args.dataPath, file)
     if os.path.isdir(file): continue
-    log = name[:-4] + ".log"
+    n = int(name[-5]) + 1
+    log = name[:-6] + "_pdb" + str(n) + ".log"
+    # log = name[:-4] + ".log"
     l = os.path.join(logPath, log)
     if os.path.exists(l) == False:
         dataFiles.remove(file)
@@ -106,11 +108,13 @@ for file in dataFiles:
 
 for file in valFiles:
     name = os.path.basename(file)
-    #path = os.path.join(args.dataPath, file)
+    # path = os.path.join(args.dataPath, file)
     if os.path.isdir(file): continue
-    log = name[:-4] + ".log"
-    l   = os.path.join(logPath,log)
-    if os.path.exists(l) == False: 
+    n = int(name[-5]) + 1
+    log = name[:-6] + "_pdb" + str(n) + ".log"
+    # log = name[:-4] + ".log"
+    l = os.path.join(logPath, log)
+    if os.path.exists(l) == False:
         valFiles.remove(file)
         print(f"No logs: removed from validation {file}")
         continue
@@ -294,8 +298,8 @@ model_json['smin'] = smin
 model_json['smax'] = smax
 model_json['firstPointIndex'] = firstPointIndex  # including, starts from 0
 model_json['lastPointIndex'] = lastPointIndex  # excluding
-model_json['meanIs'] = meanIs
-model_json['stdIs'] = stdIs
+model_json['meanIs'] = list(meanIs)
+model_json['stdIs'] = list(stdIs)
 # model_json['KratkyDegree']    = args.degree
 # compute elapsed time
 end = time.time()
