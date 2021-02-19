@@ -96,7 +96,7 @@ if metric == "l":
     plt.ylabel('Predicted')
     linGT = np.array(linGT)
     linC = np.array(linC)
-    rd  = (linC - linGT)/linGT
+    rd = abs(linC - linGT) / linGT
     aver = "{:.2%}".format(np.mean(rd))
     med = "{:.2%}".format(np.median(rd))    
     tt = f"Mean: {aver}\nMedian: {med}"
@@ -110,8 +110,8 @@ if metric == "h":
     n, bins, patches = plt.hist(rd, edgecolor='black', bins=50, density=True, facecolor='g', alpha=0.75)
     plt.xlabel('Bins')
     plt.ylabel('Probability')
-    aver = "{:.2%}".format(np.mean(rd))
-    med = "{:.2%}".format(np.median(rd))    
+    aver = "{:.2%}".format(np.mean(np.abs(rd)))
+    med = "{:.2%}".format(np.median(np.abs(rd)))
     tt = f"Mean: {aver}\nMedian: {med}"
     plt.title(tt)
     plt.grid(True)

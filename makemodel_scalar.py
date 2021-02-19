@@ -49,9 +49,9 @@ logPath = args.logPath
 dataFiles = []
 valFiles = []
 
-# folders = ["abs"]  # , "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
+folders = ["abs"]  # , "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
 # works only for even number of folders???
-folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
+# folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
 
 for f in folders:
     d = os.path.join(dataPath, "training", f)
@@ -125,11 +125,11 @@ Is, meanIs, stdIs = normalise(Is)
 IsVal, __, __ = normalise(IsVal, meanIs, stdIs)
 
 # DEBUG
-for I in IsVal:
+for I in IsVal[6:9]:
     plt.plot(I)
 plt.savefig('validation-norm.png')
 plt.clf()
-
+quit()
 model = Sequential()
 # first layer
 # he = np.sqrt(0.06/N)
@@ -148,7 +148,7 @@ model.add(Activation('relu'))
 
 avrg = np.mean(parameters)
 print(f"Mean {par}: {avrg}")
-# marginal imporovement
+# marginal improvement
 w = [np.zeros([args.units, 1]), np.array([avrg])]
 model.add(Dense(output, weights=w))
 model.add(Activation('relu'))
