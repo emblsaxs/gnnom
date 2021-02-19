@@ -48,7 +48,8 @@ dataFiles = []
 valFiles = []
 
 # folders = ["dat-c025"]  # , "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
-folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
+# works only for even number of folders???
+folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16", "abs"]
 
 for f in folders:
     d = os.path.join(dataPath, "training", f)
@@ -110,11 +111,11 @@ output = np.shape(parameters)[1]
 Is, meanIs, stdIs = normalise(Is)
 IsVal, __, __ = normalise(IsVal, meanIs, stdIs)
 
-# #DEBUG
-# for I in IsVal:
-#     plt.plot(I)
-# plt.savefig('validation-norm.png')
-# plt.clf()
+# DEBUG
+for I in IsVal:
+    plt.plot(I)
+plt.savefig('validation-norm.png')
+plt.clf()
 
 model = Sequential()
 # first layer
@@ -139,7 +140,7 @@ w = [np.zeros([args.units, 1]), np.array([avrg])]
 model.add(Dense(output, weights=w))
 model.add(Activation('relu'))
 # model.add(Dense(output))
-adama = optimizers.Adam(lr=0.001)
+adama = optimizers.Adam(lr=0.0001)
 
 model.compile(optimizer=adama, loss='mse')
 
