@@ -33,10 +33,10 @@ try:
         stdpddf = float(json_data['Normalization coefficient'])
     meanIs = json_data['meanIs']
     stdIs = json_data['stdIs']
-    # smin          = (float)(json_data['smin'])
-    # smax          = (float)(json_data['smax'])
-    # firstPointIndex = (int)(json_data['firstPointIndex'])
-    # lastPointIndex  = (int)(json_data['lastPointIndex'])
+    smin = (float)(json_data['smin'])
+    smax = (float)(json_data['smax'])
+    firstPointIndex = (int)(json_data['firstPointIndex'])
+    lastPointIndex = (int)(json_data['lastPointIndex'])
 
     jsonFile.close()
     loadedModel = model_from_json(loadedModelJson)
@@ -64,8 +64,8 @@ dataFiles.sort()
 for inputFilename in dataFiles:
     try:
         cur, __ = saxsdocument.read(os.path.join(inputFolder, inputFilename))
-        s = cur['s']
-        Is = cur['I']
+        # s = cur['s'][firstPointIndex: lastPointIndex + 1]
+        Is = cur['I'][firstPointIndex: lastPointIndex + 1]
 
     except Exception as e:
         print(f"Error: Could not read {inputFilename}:")
