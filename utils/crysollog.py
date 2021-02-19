@@ -66,7 +66,6 @@ def readDatsAndLogs(dataFiles, logPath, firstPointIndex, lastPointIndex):
     logFiles = []
     for file in dataFiles:
         name = os.path.basename(file)
-        # path = os.path.join(args.dataPath, file)
         if os.path.isdir(file): continue
         # n = int(name[-5]) + 1
         # log = name[:-6] + "_pdb" + str(n) + ".log"
@@ -74,9 +73,26 @@ def readDatsAndLogs(dataFiles, logPath, firstPointIndex, lastPointIndex):
         l = os.path.join(logPath, log)
         if os.path.exists(l) == False:
             dataFiles.remove(file)
-            print(f"No logs: removed from training {file}")
+            print(f"No logs: removed from {file}")
             continue
         cur, prop = saxsdocument.read(file)
-        Is.append(cur['I'][firstPointIndex:lastPointIndex])
+        Is.append(cur['I'][firstPointIndex:lastPointIndex + 1])
         logFiles.append(l)
     return Is, logFiles
+
+
+def readLogs(dataFiles, logPath):
+    """
+    Returns absolute path to *.log files as a list.
+    """
+    logFiles = []
+    for file in dataFiles:
+        name = os.path.basename(file)
+        if os.path.isdir(file): continue
+        log = name[:-4] + ".log"
+        l = os.path.join(logPath, log)
+        if os.path.exists(l) == False:
+            dataFiles.remove(file)
+            print(f"No logs for {file}")
+        logFiles.append(l)
+    return logFiles

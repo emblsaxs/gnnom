@@ -31,8 +31,8 @@ try:
     json_data = json.loads(loadedModelJson)
     if 'Normalization coefficient' in json_data:
         stdpddf = float(json_data['Normalization coefficient'])
-    meanIs = float(json_data['meanIs'])
-    stdIs = float(json_data['stdIs'])
+    meanIs = json_data['meanIs']
+    stdIs = json_data['stdIs']
     # smin          = (float)(json_data['smin'])
     # smax          = (float)(json_data['smax'])
     # firstPointIndex = (int)(json_data['firstPointIndex'])
@@ -49,11 +49,11 @@ try:
 
 except KeyError as e:
     print(f"Error: Oops, model cannot be loaded! Missing value: {e}")
-    os.exit()
+    quit()
 
 except Exception as e:
     print(f"Error: {e}")
-    os.exit()
+    quit()
 
 #Rg = 20.0 # Angstroms
 

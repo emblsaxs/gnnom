@@ -26,7 +26,7 @@ from keras import optimizers  # , losses
 from keras.models import Sequential
 from keras.layers import Dense, Activation
 from normalisation.logarithm import normalise  # , unnormalise
-from utils.crysollog import parseCrysolLogs, readDatsAndLogs
+from utils.crysollog import parseCrysolLogs, readDatsAndLogs, readLogs
 
 import matplotlib
 
@@ -59,7 +59,11 @@ for f in folders:
     for ff in fileNames: dataFiles.append(os.path.join(d, ff))
     for ff in valNames: valFiles.append(os.path.join(v, ff))
 
+t = os.path.join(dataPath, "test", f)
+testNames = os.listdir(t)
+
 print("Reading data files...")
+
 # process --first and --last
 firstPointIndex = int(args.first) - 1
 cur, __ = saxsdocument.read(dataFiles[0])
@@ -67,7 +71,7 @@ dat = cur['s']
 if args.last:
     if (int(args.last) > len(dat)):
         print(f"--last must be less or equal to the number of points in data files: {args.last}")
-        exit()
+        quit()
     lastPointIndex = int(args.last)
 else:
     lastPointIndex = len(dat) - 1
@@ -77,6 +81,7 @@ smax = dat[lastPointIndex]
 
 Is, logFiles = readDatsAndLogs(dataFiles, logPath, firstPointIndex, lastPointIndex)
 IsVal, logFilesVal = readDatsAndLogs(valFiles, logPath, firstPointIndex, lastPointIndex)
+logFilesTest = readLogs(testNames, logPath)
 
 print(f"Number of data files found: {len(dataFiles)}")
 print(f"Number of log  files found: {len(logFiles)}")
@@ -90,13 +95,16 @@ print("...done.")
 
 print("Parsing validation log files...")
 parametersVal, outCsvVal = parseCrysolLogs(logFilesVal, par)
-outCsv.extend(outCsvVal)
+print("...done.")
+
+print("Parsing validation log files...")
+parametersTest, outCsvTest = parseCrysolLogs(logFilesTest, par)
 print("...done.")
 
 # save ground true values to csv
-outCsvPath = f"ground-{par}-{len(logFiles)}.csv"
-np.savetxt(outCsvPath, outCsv, delimiter=",", fmt='%s')
-print(outCsvPath + " is written.")
+outCsvPath = f"ground-{par}-{len(logFilesTest)}.csv"
+np.savetxt(outCsvPath, outCsvTest, delimiter=",", fmt='%s')
+print(f"{outCsvPath} for test directory is written.")
 
 # Perceptron neural network
 # tensorboard = keras.callbacks.TensorBoard(log_dir='./Graph', histogram_freq=0, write_graph=True, write_images=True)
@@ -140,7 +148,7 @@ w = [np.zeros([args.units, 1]), np.array([avrg])]
 model.add(Dense(output, weights=w))
 model.add(Activation('relu'))
 # model.add(Dense(output))
-adama = optimizers.Adam(lr=0.0001)
+adama = optimizers.Adam(lr=0.001)
 
 model.compile(optimizer=adama, loss='mse')
 
@@ -152,10 +160,10 @@ if (args.weightsPath):
 # Check there are no Nans after normalisation
 if np.isnan(Is).any():
     print("Error: Is matrix contain Nans!")
-    os.exit()
+    quit()
 if np.isnan(IsVal).any():
     print("Error: IsVal matrix contain Nans")
-    os.exit()
+    quit()
 
 train_history = model.fit(np.array(Is), np.array(parameters), epochs=num_epochs, batch_size=len(dataFiles),
                           validation_data=(np.array(IsVal), np.array(parametersVal)),
