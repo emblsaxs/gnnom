@@ -14,6 +14,7 @@ parser.add_argument('--units', type=int, default=40, help='number of units in th
 parser.add_argument('--first', type=int, default=1, help='index of the first point to use (default: 1)')
 parser.add_argument('--last', type=int, default=None, help='index of the last point to use (default: use all)')
 parser.add_argument('--weightsPath', '-w', default=None, type=str, help='path to the h5 file')
+parser.add_argument('--picklePath', '-p', default=None, type=str, help='path to the pickle file')
 
 args = parser.parse_args()
 
@@ -29,6 +30,7 @@ from normalisation.logarithm import normalise  # , unnormalise
 from utils.crysollog import parseCrysolLogs, readDatsAndLogs, readLogs
 
 import matplotlib
+import pickle
 
 # AGG backend is for writing to file, not for rendering in a window
 matplotlib.use('Agg')
@@ -78,10 +80,13 @@ else:
 
 smin = dat[firstPointIndex]
 smax = dat[lastPointIndex]
-
-Is, logFiles = readDatsAndLogs(dataFiles, logPath, firstPointIndex, lastPointIndex)
-IsVal, logFilesVal = readDatsAndLogs(valFiles, logPath, firstPointIndex, lastPointIndex)
-logFilesTest = readLogs(testNames, logPath)
+if not args.picklePath:
+    Is, logFiles = readDatsAndLogs(dataFiles, logPath, firstPointIndex, lastPointIndex)
+    IsVal, logFilesVal = readDatsAndLogs(valFiles, logPath, firstPointIndex, lastPointIndex)
+    logFilesTest = readLogs(testNames, logPath)
+    pickle.dump([Is, logFiles, IsVal, logFilesVal, logFilesTest], open("data.p", "wb"))
+else:
+    Is, logFiles, IsVal, logFilesVal, logFilesTest = pickle.load(open(args.picklePath, "rb"))
 
 print(f"Number of data files found: {len(dataFiles)}")
 print(f"Number of log  files found: {len(logFiles)}")
