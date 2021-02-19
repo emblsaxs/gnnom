@@ -18,6 +18,7 @@ def normalise(Is, subtractor=None, divisor=None):
 
 def unnormalise(Is, mean, std):
     """
+    Used for autoencoders.
     Mean and std arrays must be the same as used for data
     normalisation to properly restore your data!
     """

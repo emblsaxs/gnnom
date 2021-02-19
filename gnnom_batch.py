@@ -1,4 +1,6 @@
-#!/usr/bin/python
+"""
+Apply NN for prediction.
+"""
 import argparse
 
 parser = argparse.ArgumentParser(description='Apply NN model in batch regime.')
@@ -43,16 +45,15 @@ try:
     inputLength = loadedModel.input_shape[1]  # I(s) points
     print("Expected input: " + str(inputLength) + " points.")
     # outputLength = loadedModel.output_shape[1]  # p(r) points
-
     print("Model loaded. Yeah!")
 
 except KeyError as e:
     print(f"Error: Oops, model cannot be loaded! Missing value: {e}")
-    exit()
+    os.exit()
 
 except Exception as e:
     print(f"Error: {e}")
-    exit()
+    os.exit()
 
 #Rg = 20.0 # Angstroms
 
@@ -97,12 +98,13 @@ for inputFilename in dataFiles:
     #if round(s[lastPointIndex - 1], 3) != round(smax, 3):
     #    print(f"{inputFilename}: point {lastPointIndex - 1} has s={s[lastPointIndex]}, expected s={smax}")
     #    exit()
+
     Is, __, __ = normalise(Is, meanIs, stdIs)
     test = np.array([Is, ])
     pred = loadedModel.predict(test)
 
     #TODO: instead of checking output number of points > 10 read model type (scalar/pddf)
-    if len(pred[0]) > 10:
+    if len(pred[0]) > 10:  # pddf or autoencoder model
         # Find Dmax: first negative (or zero) point after max(p(r))
         max_pddf = np.argmax(pred)
         negIndex = np.argmax(pred[:, max_pddf:] <= 0)
@@ -116,7 +118,7 @@ for inputFilename in dataFiles:
         pddf_predicted = np.vstack((r, stdpddf * pred[0]))
         np.savetxt(inputFilename[:-4], np.transpose(pddf_predicted), fmt="%.8e")
 
-    else:
+    else:  # scalar model
         for number in pred[0]:
             outCsv.append(inputFilename[:-4] + ', ' + str(round(number, 3)))
 

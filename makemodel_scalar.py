@@ -1,6 +1,7 @@
-#!/usr/bin/python
-# coding: utf-8
-
+"""
+Train a NN for predicting a scalar value (rg, mw, dmax, v)
+and save the model on disc (weights in *.h5 and configuration in *.json files)
+"""
 import argparse
 
 parser = argparse.ArgumentParser(description='Make NN model - arguments and options.')
@@ -29,13 +30,10 @@ from utils.crysollog import parseCrysolLogs, readDatsAndLogs
 
 import matplotlib
 
+# AGG backend is for writing to file, not for rendering in a window
 matplotlib.use('Agg')
-
 import matplotlib.pyplot as plt
-
-# np.random.seed(5)
-# tf.random.set_seed(5)
-
+# todo: tf.random.set_seed(5)
 import time
 
 start = time.time()
@@ -60,9 +58,9 @@ for f in folders:
     for ff in fileNames: dataFiles.append(os.path.join(d, ff))
     for ff in valNames: valFiles.append(os.path.join(v, ff))
 
-
 print("Reading data files...")
 # process --first and --last
+firstPointIndex = int(args.first) - 1
 cur, __ = saxsdocument.read(dataFiles[0])
 dat = cur['s']
 if args.last:
@@ -72,8 +70,6 @@ if args.last:
     lastPointIndex = int(args.last)
 else:
     lastPointIndex = len(dat) - 1
-
-firstPointIndex = int(args.first) - 1
 
 smin = dat[firstPointIndex]
 smax = dat[lastPointIndex]
@@ -130,33 +126,29 @@ model.add(Activation('relu'))
 model.add(Dense(args.units, use_bias=True, kernel_initializer='he_uniform', bias_initializer='zeros'))
 model.add(Activation('relu'))
 
-avrgMW = np.mean(parameters)
-print(f"Mean {par}: {avrgMW}")
+avrg = np.mean(parameters)
+print(f"Mean {par}: {avrg}")
 # marginal imporovement
-w = [np.zeros([args.units, 1]), np.array([avrgMW])]
-model.add(Dense(output, weights = w))
+w = [np.zeros([args.units, 1]), np.array([avrg])]
+model.add(Dense(output, weights=w))
 model.add(Activation('relu'))
 # model.add(Dense(output))
-adama = optimizers.Adam(lr=0.0001)
+adama = optimizers.Adam(lr=0.001)
 
 model.compile(optimizer=adama, loss='mse')
 
-model_name = f"gnnom-{par}-0.1-5-e{args.epochs}-u{args.units}"
+model_name = f"gnnom-{par}-{firstPointIndex}-{lastPointIndex}-e{args.epochs}-u{args.units}"
 
 if (args.weightsPath):
     model.load_weights(args.weightsPath)
+
+# Check there are no Nans after normalisation
 if np.isnan(Is).any():
-    print("Is contain nans")
-    exit()
+    print("Error: Is matrix contain Nans!")
+    os.exit()
 if np.isnan(IsVal).any():
-    print("IsVal contain nans")
-    exit()
-if np.isnan(parameters).any():
-    print("parameters contain nans")
-    exit()
-if np.isnan(parametersVal).any():
-    print("parametersVal contain nans")
-    exit()
+    print("Error: IsVal matrix contain Nans")
+    os.exit()
 
 train_history = model.fit(np.array(Is), np.array(parameters), epochs=num_epochs, batch_size=len(dataFiles),
                           validation_data=(np.array(IsVal), np.array(parametersVal)),
@@ -168,16 +160,16 @@ val_loss = train_history.history['val_loss']
 # Confirm that it works
 data = np.arange(N)
 
+# save 2d plot of weights in the first layer
 plt.imshow(model.get_weights()[0], cmap='coolwarm')
 plt.savefig('weights-' + model_name + '.png')
 plt.clf()
 
-np.savetxt('loss-' + model_name + '.int', np.transpose(np.vstack((np.arange(num_epochs),loss, val_loss))), fmt = "%.8e")
+np.savetxt(f'loss-{model_name}.int', np.transpose(np.vstack((np.arange(num_epochs), loss, val_loss))), fmt="%.8e")
 
 scores = model.evaluate(np.array(IsVal), np.array(parametersVal), verbose=0)
-
-print(model.metrics_names)
-print(scores)
+print(f"Metrics: {model.metrics_names}")
+print(f"Scores: {scores}")
 
 # serialize model to JSON
 model_str = model.to_json()
@@ -199,4 +191,3 @@ with open(model_name + ".json", "w") as json_file:
 # serialize weights to HDF5
 # model.save_weights(model_name + ".h5") #last but not best weights
 print("Saved model " + model_name + " to disk")
-

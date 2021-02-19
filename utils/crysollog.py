@@ -1,9 +1,16 @@
+"""
+Read and parse CRYSOL log files
+"""
 import os
 
 import saxsdocument
 
 
 def parseCrysolLogs(logFiles, par):
+    """
+    Parse crysol log files for rg,mw,dmax or volume and returns the
+    double array of [[params]] and csv file "filename, param\n..."
+    """
     parameters = []
     outCsv = []
     for f in logFiles:
@@ -38,11 +45,16 @@ def parseCrysolLogs(logFiles, par):
                     parameters.append(rgdmaxmw)
                     outCsv.append(file[:-4] + ', ' + str(round(mw, 3)))
                     break
+            # todo: if par == "v":...
 
     return parameters, outCsv
 
 
 def readDatsAndLogs(dataFiles, logPath, firstPointIndex, lastPointIndex):
+    """
+    Reads *.dat files, finds corresponding crysol log files, returns
+    2d list of intensities and a list of log files.
+    """
     Is = []
     logFiles = []
     for file in dataFiles:
