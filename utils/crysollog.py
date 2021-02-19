@@ -61,9 +61,9 @@ def readDatsAndLogs(dataFiles, logPath, firstPointIndex, lastPointIndex):
         name = os.path.basename(file)
         # path = os.path.join(args.dataPath, file)
         if os.path.isdir(file): continue
-        n = int(name[-5]) + 1
-        log = name[:-6] + "_pdb" + str(n) + ".log"
-        # log = name[:-4] + ".log"
+        # n = int(name[-5]) + 1
+        # log = name[:-6] + "_pdb" + str(n) + ".log"
+        log = name[:-4] + ".log"
         l = os.path.join(logPath, log)
         if os.path.exists(l) == False:
             dataFiles.remove(file)

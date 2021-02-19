@@ -47,8 +47,8 @@ logPath = args.logPath
 dataFiles = []
 valFiles = []
 
-folders = ["dat-c025"]  # , "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
-# folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
+# folders = ["dat-c025"]  # , "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
+folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
 
 for f in folders:
     d = os.path.join(dataPath, "training", f)
@@ -109,6 +109,12 @@ output = np.shape(parameters)[1]
 # Normalise SAXS input
 Is, meanIs, stdIs = normalise(Is)
 IsVal, __, __ = normalise(IsVal, meanIs, stdIs)
+
+# #DEBUG
+# for I in IsVal:
+#     plt.plot(I)
+# plt.savefig('validation-norm.png')
+# plt.clf()
 
 model = Sequential()
 # first layer

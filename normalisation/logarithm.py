@@ -6,13 +6,13 @@ import numpy as np
 
 def normalise(Is, subtractor=None, divisor=None):
     """Normalise data as log(x) - <log(x)> / std(log(X)"""
-    Is = np.log10(Is)
+    Is = np.log10(np.array(Is) + 1.0)
     if subtractor is None: subtractor = np.mean(Is, axis=0)
     Is = Is - subtractor
     if divisor is None: divisor = np.std(Is, axis=0)
     Is = np.divide(Is, divisor)
     where_are_NaNs = np.isnan(Is)
-    Is[where_are_NaNs] = -5
+    Is[where_are_NaNs] = 0.0
     return Is, subtractor, divisor
 
 
@@ -31,5 +31,5 @@ def unnormalise(Is, mean, std):
     #         if num <= 128: Is[num] = I
     Is = np.multiply(Is, std)
     Is += mean
-    Is = 10 ** Is
+    Is = 10 ** (Is + 1.0)
     return Is
