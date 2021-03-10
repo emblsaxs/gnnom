@@ -13,6 +13,8 @@ def normalise(Is, subtractor=None, divisor=None):
     Is = np.divide(Is, divisor)
     where_are_NaNs = np.isnan(Is)
     Is[where_are_NaNs] = 0.0
+    where_are_Infs = np.isinf(Is)
+    Is[where_are_Infs] = 0.0
     return Is, subtractor, divisor
 
 

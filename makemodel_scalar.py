@@ -58,8 +58,10 @@ for f in folders:
     v = os.path.join(dataPath, "validation", f)
     fileNames = os.listdir(d)
     valNames = os.listdir(v)
-    for ff in fileNames: dataFiles.append(os.path.join(d, ff))
-    for ff in valNames: valFiles.append(os.path.join(v, ff))
+    for ff in fileNames:
+        dataFiles.append(os.path.join(d, ff))
+    for ff in valNames:
+        valFiles.append(os.path.join(v, ff))
 
 t = os.path.join(dataPath, "test", f)
 testNames = os.listdir(t)
@@ -71,7 +73,7 @@ firstPointIndex = int(args.first) - 1
 cur, __ = saxsdocument.read(dataFiles[0])
 dat = cur['s']
 if args.last:
-    if (int(args.last) > len(dat)):
+    if int(args.last) > len(dat):
         print(f"--last must be less or equal to the number of points in data files: {args.last}")
         quit()
     lastPointIndex = int(args.last)
@@ -102,7 +104,7 @@ print("Parsing validation log files...")
 parametersVal, outCsvVal = parseCrysolLogs(logFilesVal, par)
 print("...done.")
 
-print("Parsing validation log files...")
+print("Parsing test log files...")
 parametersTest, outCsvTest = parseCrysolLogs(logFilesTest, par)
 print("...done.")
 
@@ -124,12 +126,11 @@ output = np.shape(parameters)[1]
 Is, meanIs, stdIs = normalise(Is)
 IsVal, __, __ = normalise(IsVal, meanIs, stdIs)
 
-# DEBUG
-for I in IsVal[6:9]:
-    plt.plot(I)
-plt.savefig('validation-norm.png')
-plt.clf()
-quit()
+# # DEBUG
+# for I in IsVal[6:9]:
+#     plt.plot(I)
+# plt.savefig('validation-norm.png')
+# plt.clf()
 model = Sequential()
 # first layer
 # he = np.sqrt(0.06/N)
@@ -159,7 +160,7 @@ model.compile(optimizer=adama, loss='mse')
 
 model_name = f"gnnom-{par}-{firstPointIndex}-{lastPointIndex}-e{args.epochs}-u{args.units}"
 
-if (args.weightsPath):
+if args.weightsPath:
     model.load_weights(args.weightsPath)
 
 # Check there are no Nans after normalisation
