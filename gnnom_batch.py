@@ -55,75 +55,83 @@ except Exception as e:
     print(f"Error: {e}")
     quit()
 
-#Rg = 20.0 # Angstroms
+# Rg = 20.0 # Angstroms
 
 # output csv
 outCsv = []
 dataFiles = os.listdir(args.dataPath)
 dataFiles.sort()
-for inputFilename in dataFiles:
-    try:
-        cur, __ = saxsdocument.read(os.path.join(inputFolder, inputFilename))
-        # s = cur['s'][firstPointIndex: lastPointIndex + 1]
-        Is = cur['I'][firstPointIndex: lastPointIndex + 1]
+folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16", "abs"]
 
-    except Exception as e:
-        print(f"Error: Could not read {inputFilename}:")
-        print(e)
-        continue
+for f in folders:
+    print(f"Processing folder: {f}")
+    t = os.path.join(args.dataPath, "test", f)
+    dataFiles = os.listdir(t)
+    dataFiles.sort()
+    for inputFilename in dataFiles:
+        try:
+            cur, __ = saxsdocument.read(os.path.join(t, inputFilename))
+            # s = cur['s'][firstPointIndex: lastPointIndex + 1]
+            Is = cur['I'][firstPointIndex: lastPointIndex + 1]
 
-    #if s[0] != 0:
-    #    # sew missing head
-    #    step = s[1] - s[0]
-    #    # find number of missing points
-    #    head_number = (int)(np.rint((s[0] )/step))
-    #    ss = 0.0
-    #    s_head  = np.full(head_number, 0.0)
-    #    Is_head = np.full(head_number, 0.0)
-    #    for i in range(head_number):
-    #        s_head[i]  = ss
-    #        Is_head[i] = np.exp(ss*ss*Rg*Rg/-3.0)
-    #        ss += step
-    #    s  = np.hstack((s_head, s))
-    #    Is = np.hstack((Is_head, Is))
+        except Exception as e:
+            print(f"Error: Could not read {inputFilename}:")
+            print(e)
+            continue
 
-    #if len(Is[firstPointIndex:lastPointIndex]) != inputLength:
-    #    print(f"{inputFilename} too short, skipping.")
-    #    continue
+        # if s[0] != 0:
+        #    # sew missing head
+        #    step = s[1] - s[0]
+        #    # find number of missing points
+        #    head_number = (int)(np.rint((s[0] )/step))
+        #    ss = 0.0
+        #    s_head  = np.full(head_number, 0.0)
+        #    Is_head = np.full(head_number, 0.0)
+        #    for i in range(head_number):
+        #        s_head[i]  = ss
+        #        Is_head[i] = np.exp(ss*ss*Rg*Rg/-3.0)
+        #        ss += step
+        #    s  = np.hstack((s_head, s))
+        #    Is = np.hstack((Is_head, Is))
 
-    #if round(s[firstPointIndex], 3) != round(smin, 3):
-    #    print(f"{inputFilename}: point {firstPointIndex} has s={s[firstPointIndex]}, expected s={smin}")
-    #    exit()
+        # if len(Is[firstPointIndex:lastPointIndex]) != inputLength:
+        #    print(f"{inputFilename} too short, skipping.")
+        #    continue
 
-    #if round(s[lastPointIndex - 1], 3) != round(smax, 3):
-    #    print(f"{inputFilename}: point {lastPointIndex - 1} has s={s[lastPointIndex]}, expected s={smax}")
-    #    exit()
+        # if round(s[firstPointIndex], 3) != round(smin, 3):
+        #    print(f"{inputFilename}: point {firstPointIndex} has s={s[firstPointIndex]}, expected s={smin}")
+        #    exit()
 
-    Is, __, __ = normalise(Is, meanIs, stdIs)
-    test = np.array([Is, ])
-    pred = loadedModel.predict(test)
+        # if round(s[lastPointIndex - 1], 3) != round(smax, 3):
+        #    print(f"{inputFilename}: point {lastPointIndex - 1} has s={s[lastPointIndex]}, expected s={smax}")
+        #    exit()
 
-    #TODO: instead of checking output number of points > 10 read model type (scalar/pddf)
-    if len(pred[0]) > 10:  # pddf or autoencoder model
-        # Find Dmax: first negative (or zero) point after max(p(r))
-        max_pddf = np.argmax(pred)
-        negIndex = np.argmax(pred[:, max_pddf:] <= 0)
-        # Crop p(r > Dmax), nullify last point
-        pred = pred[:, 0: (negIndex + max_pddf + 1)]
-        pred[:, -1] = 0.0
+        Is, __, __ = normalise(Is, meanIs, stdIs)
+        test = np.array([Is, ])
+        pred = loadedModel.predict(test)
 
-        r = np.arange(0.0, len(pred[0]) * 0.25, 0.25)
-        outCsv.append(inputFilename[:-4] + ', ' + str(round(r[-1], 3)))
-        # print(f"{len(r)} - {len(pred[0])} - {r[-1]}") # DEBUG
-        pddf_predicted = np.vstack((r, stdpddf * pred[0]))
-        np.savetxt(inputFilename[:-4], np.transpose(pddf_predicted), fmt="%.8e")
+        # TODO: instead of checking output number of points > 10 read model type (scalar/pddf)
+        if len(pred[0]) > 10:  # pddf or autoencoder model
+            # Find Dmax: first negative (or zero) point after max(p(r))
+            max_pddf = np.argmax(pred)
+            negIndex = np.argmax(pred[:, max_pddf:] <= 0)
+            # Crop p(r > Dmax), nullify last point
+            pred = pred[:, 0: (negIndex + max_pddf + 1)]
+            pred[:, -1] = 0.0
 
-    else:  # scalar model
-        for number in pred[0]:
-            outCsv.append(inputFilename[:-4] + ', ' + str(round(number, 3)))
+            r = np.arange(0.0, len(pred[0]) * 0.25, 0.25)
+            outCsv.append(inputFilename[:-4] + ', ' + str(round(r[-1], 3)))
+            # print(f"{len(r)} - {len(pred[0])} - {r[-1]}") # DEBUG
+            pddf_predicted = np.vstack((r, stdpddf * pred[0]))
+            np.savetxt(inputFilename[:-4], np.transpose(pddf_predicted), fmt="%.8e")
 
-if outCsvPath != "":
-    np.savetxt(outCsvPath, outCsv, delimiter=",", fmt='%s')
-    print(outCsvPath + " is written.")
-else:
-    print("\n".join(outCsv))
+        else:  # scalar model
+            for number in pred[0]:
+                outCsv.append(inputFilename[:-4] + ', ' + str(round(number, 3)))
+
+    if outCsvPath != "":
+        np.savetxt(f"{f}-{outCsvPath}", outCsv, delimiter=",", fmt='%s')
+        print(f"{f}-{outCsvPath} is written.")
+    else:
+        print(f"Folder {f}:")
+        print("\n".join(outCsv))
