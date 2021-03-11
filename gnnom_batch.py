@@ -29,10 +29,17 @@ try:
     jsonFile = open(jsonFilename, 'r')
     loadedModelJson = jsonFile.read()
     json_data = json.loads(loadedModelJson)
+    # Optional fields in json
     if 'Normalization coefficient' in json_data:
         stdpddf = float(json_data['Normalization coefficient'])
-    meanIs = json_data['meanIs']
-    stdIs = json_data['stdIs']
+    if 'meanIs' in json_data:
+        meanIs = json_data['meanIs']
+        stdIs = json_data['stdIs']
+    elif 'meanIs' not in json_data:
+        print(f"ACHTUNG! "
+              f"{jsonFilename} does not contain normalization coefficients!"
+              f"Proceeding without normalization...")
+    # Compulsory fields in json
     smin = (float)(json_data['smin'])
     smax = (float)(json_data['smax'])
     firstPointIndex = (int)(json_data['firstPointIndex'])
@@ -105,8 +112,10 @@ for f in folders:
         # if round(s[lastPointIndex - 1], 3) != round(smax, 3):
         #    print(f"{inputFilename}: point {lastPointIndex - 1} has s={s[lastPointIndex]}, expected s={smax}")
         #    exit()
-
-        Is, __, __ = normalise(Is, meanIs, stdIs)
+        try:
+            Is, __, __ = normalise(Is, meanIs, stdIs)
+        except:
+            pass
         test = np.array([Is, ])
         pred = loadedModel.predict(test)
 
