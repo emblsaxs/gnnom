@@ -36,9 +36,9 @@ medianError = []  # median
 
 # iterate over all csv files in the folder
 for csv2 in files:
-    result = re.search('dat-c(.*)-', csv2)
-    wha = result.group(1)
-    wha = wha.split("-")[0]
+    print(csv2)
+    result = re.search('(.+)dat-c(.+).csv', csv2)
+    wha = result.group(2)
     if "025" in wha:
         conc = 0.25
     elif "05" in wha:

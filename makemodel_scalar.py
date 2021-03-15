@@ -155,7 +155,7 @@ w = [np.zeros([args.units, 1]), np.array([avrg])]
 model.add(Dense(output, weights=w))
 model.add(Activation('relu'))
 # model.add(Dense(output))
-adama = optimizers.Adam(lr=0.0001)
+adama = optimizers.Adam(lr=0.001)
 
 model.compile(optimizer=adama, loss='mse')
 
@@ -200,8 +200,11 @@ model_json['smin'] = smin
 model_json['smax'] = smax
 model_json['firstPointIndex'] = firstPointIndex  # including, starts from 0
 model_json['lastPointIndex'] = lastPointIndex  # excluding
-model_json['meanIs'] = list(meanIs)
-model_json['stdIs'] = list(stdIs)
+try:
+    model_json['meanIs'] = list(meanIs)
+    model_json['stdIs'] = list(stdIs)
+except:
+    print("No normalization has been applied.")
 # model_json['KratkyDegree']    = args.degree
 # compute elapsed time
 end = time.time()

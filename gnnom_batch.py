@@ -6,8 +6,8 @@ import argparse
 parser = argparse.ArgumentParser(description='Apply NN model in batch regime.')
 parser.add_argument('architecture',  metavar='json',   type=str, help='path to the json file with architecture')
 parser.add_argument('weights', metavar='h5',   type=str, help='path to the hdf5 file with weights')
-parser.add_argument('dataPath',   metavar='path', type=str, help='path to the folder with data')
-parser.add_argument('-o', '--output', type=str, default="", help='save output in CSV format')
+parser.add_argument('dataPath', metavar='path', type=str, help='path to the folder with data')
+parser.add_argument('-o', '--output', type=str, default="", help='prefix to output CSV files')
 
 args = parser.parse_args()
 
@@ -67,7 +67,7 @@ except Exception as e:
 
 dataFiles = os.listdir(args.dataPath)
 dataFiles.sort()
-folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16", "abs"]
+folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
 
 for f in folders:
     outCsv = []
@@ -139,7 +139,7 @@ for f in folders:
                 outCsv.append(inputFilename[:-4] + ', ' + str(round(number, 3)))
 
     if outCsvPath != "":
-        np.savetxt(f"{f}-{outCsvPath}", outCsv, delimiter=",", fmt='%s')
+        np.savetxt(f"{outCsvPath}-{f}.csv", outCsv, delimiter=",", fmt='%s')
         print(f"{f}-{outCsvPath} is written.")
     else:
         print(f"Folder {f}:")
