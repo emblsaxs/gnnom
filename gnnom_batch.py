@@ -64,13 +64,13 @@ except Exception as e:
 
 # Rg = 20.0 # Angstroms
 
-# output csv
-outCsv = []
+
 dataFiles = os.listdir(args.dataPath)
 dataFiles.sort()
 folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16", "abs"]
 
 for f in folders:
+    outCsv = []
     print(f"Processing folder: {f}")
     t = os.path.join(args.dataPath, "test", f)
     dataFiles = os.listdir(t)
