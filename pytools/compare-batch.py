@@ -87,7 +87,7 @@ plt.scatter(x, y, facecolors='none', edgecolors='black')
 plt.plot(x, y, c="black")
 plt.gca().invert_yaxis()
 plt.xlabel('Simulated concentration, mg/ml')
-plt.ylabel('Relative error, %')
+plt.ylabel('Relative error')
 plt.grid(True)
 plt.show()
 

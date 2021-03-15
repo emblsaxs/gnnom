@@ -14,7 +14,7 @@ parser.add_argument('--units', type=int, default=40, help='number of units in th
 parser.add_argument('--first', type=int, default=1, help='index of the first point to use (default: 1)')
 parser.add_argument('--last', type=int, default=None, help='index of the last point to use (default: use all)')
 parser.add_argument('--weightsPath', '-w', default=None, type=str, help='path to the h5 file')
-parser.add_argument('--picklePath', '-p', default=None, type=str, help='path to the pickle file')
+parser.add_argument('--picklePath', '-p', default=None, type=str, help='path to the pickle file, by default data.p')
 
 args = parser.parse_args()
 
@@ -85,9 +85,22 @@ if not args.picklePath:
     Is, logFiles = readDatsAndLogs(dataFiles, logPath, firstPointIndex, lastPointIndex)
     IsVal, logFilesVal = readDatsAndLogs(valFiles, logPath, firstPointIndex, lastPointIndex)
     logFilesTest = readLogs(testNames, logPath)
-    pickle.dump([Is, logFiles, IsVal, logFilesVal, logFilesTest], open("data.p", "wb"))
+    print("Parsing data log files...")
+    parameters, outCsv = parseCrysolLogs(logFiles, par)
+    print("...done.")
+
+    print("Parsing validation log files...")
+    parametersVal, outCsvVal = parseCrysolLogs(logFilesVal, par)
+    print("...done.")
+
+    print("Parsing test log files...")
+    parametersTest, outCsvTest = parseCrysolLogs(logFilesTest, par)
+    print("...done.")
+    pickle.dump([Is, logFiles, IsVal, logFilesVal, logFilesTest,
+                 parameters, parametersVal, parametersTest, outCsvTest], open("data.p", "wb"))
 else:
-    Is, logFiles, IsVal, logFilesVal, logFilesTest = pickle.load(open(args.picklePath, "rb"))
+    Is, logFiles, IsVal, logFilesVal, logFilesTest, \
+    parameters, parametersVal, parametersTest, outCsvTest = pickle.load(open(args.picklePath, "rb"))
 
 print(f"Number of data files found: {len(dataFiles)}")
 print(f"Number of log  files found: {len(logFiles)}")
@@ -95,17 +108,6 @@ print(f"Number of validation files found: {len(valFiles)}")
 print(f"Number of validation log  files found: {len(logFilesVal)}")
 print("...done.")
 
-print("Parsing data log files...")
-parameters, outCsv = parseCrysolLogs(logFiles, par)
-print("...done.")
-
-print("Parsing validation log files...")
-parametersVal, outCsvVal = parseCrysolLogs(logFilesVal, par)
-print("...done.")
-
-print("Parsing test log files...")
-parametersTest, outCsvTest = parseCrysolLogs(logFilesTest, par)
-print("...done.")
 
 # save ground true values to csv
 outCsvPath = f"ground-{par}-{len(logFilesTest)}.csv"
@@ -153,7 +155,7 @@ w = [np.zeros([args.units, 1]), np.array([avrg])]
 model.add(Dense(output, weights=w))
 model.add(Activation('relu'))
 # model.add(Dense(output))
-adama = optimizers.Adam(lr=0.001)
+adama = optimizers.Adam(lr=0.0001)
 
 model.compile(optimizer=adama, loss='mse')
 
