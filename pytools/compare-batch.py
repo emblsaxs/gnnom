@@ -36,7 +36,7 @@ medianError = []  # median
 
 # iterate over all csv files in the folder
 for csv2 in files:
-    print(csv2)
+    if not csv2.endswith(".csv"): continue
     result = re.search('(.+)dat-c(.+).csv', csv2)
     wha = result.group(2)
     if "025" in wha:

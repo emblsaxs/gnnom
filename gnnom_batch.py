@@ -50,7 +50,7 @@ try:
     # load weights into new model
     loadedModel.load_weights(h5Filename)
     inputLength = loadedModel.input_shape[1]  # I(s) points
-    print("Expected input: " + str(inputLength) + " points.")
+    print(f"Expected input: {inputLength} points.")
     # outputLength = loadedModel.output_shape[1]  # p(r) points
     print("Model loaded. Yeah!")
 
@@ -78,7 +78,6 @@ for f in folders:
     for inputFilename in dataFiles:
         try:
             cur, __ = saxsdocument.read(os.path.join(t, inputFilename))
-            # s = cur['s'][firstPointIndex: lastPointIndex + 1]
             Is = cur['I'][firstPointIndex: lastPointIndex + 1]
 
         except Exception as e:
@@ -113,7 +112,7 @@ for f in folders:
         #    print(f"{inputFilename}: point {lastPointIndex - 1} has s={s[lastPointIndex]}, expected s={smax}")
         #    exit()
         try:
-            Is, __, __ = normalise(Is, meanIs, stdIs)
+            Is, __, __ = normalise(Is, stdIs, meanIs)
         except:
             pass
         test = np.array([Is, ])
@@ -136,7 +135,7 @@ for f in folders:
 
         else:  # scalar model
             for number in pred[0]:
-                outCsv.append(inputFilename[:-4] + ', ' + str(round(number, 3)))
+                outCsv.append(f"{inputFilename[:-4]},  {round(number, 3)}")
 
     if outCsvPath != "":
         np.savetxt(f"{outCsvPath}-{f}.csv", outCsv, delimiter=",", fmt='%s')

@@ -124,8 +124,9 @@ N = np.shape(Is)[1]
 output = np.shape(parameters)[1]
 
 # Normalise SAXS input
-Is, meanIs, stdIs = normalise(Is)
-IsVal, __, __ = normalise(IsVal, meanIs, stdIs)
+dd = np.ones(np.shape(Is)[1])  # no division
+Is, stdIs, meanIs = normalise(Is, dd)
+IsVal, __, __ = normalise(IsVal, stdIs, meanIs)
 
 # # DEBUG
 # for I in IsVal[6:9]:

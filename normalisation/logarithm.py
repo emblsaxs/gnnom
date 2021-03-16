@@ -4,7 +4,7 @@ Normalisation for SAXS data used for machine learning applications
 import numpy as np
 
 
-def normalise(Is, subtractor=None, divisor=None):
+def normalise(Is, divisor=None, subtractor=None):
     """Normalise data as log(x) - <log(x)> / std(log(X)"""
     Is = np.log10(np.array(Is) + 1.0)
     if subtractor is None: subtractor = np.mean(Is, axis=0)
@@ -15,10 +15,10 @@ def normalise(Is, subtractor=None, divisor=None):
     Is[where_are_NaNs] = 0.0
     where_are_Infs = np.isinf(Is)
     Is[where_are_Infs] = 0.0
-    return Is, subtractor, divisor
+    return Is, divisor, subtractor
 
 
-def unnormalise(Is, mean, std):
+def unnormalise(Is, std, mean):
     """
     Used for autoencoders.
     Mean and std arrays must be the same as used for data
