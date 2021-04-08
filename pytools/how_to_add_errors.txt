@@ -1,9 +1,0 @@
-To add errors to reduced data files, assuming that they are in ./data-reduced and original frames are in ./data:
-
-1) python teethMaker.py data/*.dat -o=myTeeth.dat
-(takes around 3 minutes for large datasets)
-
-2) python addteeth.py -t=myTeeth.dat data-reduced/*.dat -p=data-reduced-with-errors/err_
-
-The final dataset will be in the data-reduced-with-frames folder with a prefix "err_"
- 
