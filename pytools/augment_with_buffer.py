@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import argparse
-import pysaxsdocument as saxsdocument
+import saxsdocument
 import numpy as np
 import os
 
@@ -30,15 +30,15 @@ bSigma        = args.shift
 cSigma        = args.scale
 
 # compute teeth from template file
-tcurve   = saxsdocument.read(templatePath)
-sI           = np.array(tcurve.curve[1])
-sErr         = np.array(tcurve.curve[2])
+tcurve, __   = saxsdocument.read(templatePath)
+sI           = np.array(tcurve['I'])
+sErr         = np.array(tcurve['Err'])
 teeth        = np.abs(sI/(sErr**2))
 
 # create noise buffer
-bcurve   = saxsdocument.read(bufferPath)
+bcurve, __   = saxsdocument.read(bufferPath)
 #sBuf         = np.array(bcurve['s'])
-IsBuf        = np.array(bcurve.curve[1])
+IsBuf        = np.array(bcurve['I'])
 #errBuf       = np.sqrt(np.abs(IsBuf/teeth))
 #IsBufNoise   = np.random.normal(IsBuf, errBuf)
 #saxsdocument.write(f"{prefix}noise-{bufferPath}", {'s' : sBuf, 'I' : IsBufNoise, 'Err' : errBuf, 'Fit' : ''}, bprop)
@@ -46,10 +46,11 @@ IsBuf        = np.array(bcurve.curve[1])
 # apply to all simulated data files on absolute scale
 for inputFilename in os.listdir(inputFolder):
 
-    dat   = saxsdocument.read(os.path.join(inputFolder, inputFilename))
+    dat, property   = saxsdocument.read(os.path.join(inputFolder, inputFilename))
+    property['sample-concentration'] = conc
     # create unsubtracted sample with noise
-    s    = np.array(dat.curve[0])
-    Is   = conc*np.array(dat.curve[1]) + IsBuf
+    s    = np.array(dat['s'])
+    Is   = conc*np.array(dat['I']) + IsBuf
     err  = np.sqrt(np.abs(Is/teeth))
     IsNoise = np.random.normal(Is, err)
     
@@ -67,5 +68,5 @@ for inputFilename in os.listdir(inputFolder):
     IsSub  = (IsNoise - IsBufAugNoise)/conc
     errSub = np.sqrt(errBufAug**2 + err**2)/conc
     # save file
-    saxsdocument.write(f"{prefix}{inputFilename[:-4]}.dat", [s, IsSub, errSub], dat.property)
+    saxsdocument.write(f"{prefix}{inputFilename[:-4]}.dat", {'s': s,'I': IsSub,'Err': errSub}, property)
 
