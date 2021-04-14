@@ -7,7 +7,8 @@ import argparse
 parser = argparse.ArgumentParser(description='Compare NN predictions.')
 parser.add_argument('csv1', metavar='csv1', type=str, help='path to the template csv file')
 parser.add_argument('csv2', metavar='csv2', type=str, help='path to the folder with csv files for comparison')
-
+parser.add_argument('--col1', type=int, default=1, help='Column number from the template csv file (starts from 0)')
+parser.add_argument('--col2', type=int, default=1, help='Column number from the csv files for comparison (starts from 0)')
 parser.add_argument('-o', '--output', type=str, default="",
                     help='save output in CSV format')
 
@@ -27,18 +28,20 @@ outCsvPath = args.output
 # convert to dictionaries
 with open(csv1, mode='r', newline='') as infile:
     reader = csv.reader(infile)
-    dict1 = {rows[0]: rows[1] for rows in reader}
+    dict1 = {rows[0]: rows[args.col1] for rows in reader}
 
 files = os.listdir(folder)
 c = []  # concentrations parsed from the names of csv files
 averRelError = []  # mean relative error
-medianError = []  # median
+medianError  = []  # median
+standDev     = []  # standard deviation
 
 # iterate over all csv files in the folder
 for csv2 in files:
     if not csv2.endswith(".csv"): continue
-    result = re.search('(.+)dat-c(.+).csv', csv2)
-    wha = result.group(2)
+
+    result = re.search('dat-c(.+)-result.csv', csv2)
+    wha = result.group(1)
     if "025" in wha:
         conc = 0.25
     elif "05" in wha:
@@ -50,7 +53,7 @@ for csv2 in files:
     path = os.path.join(folder, csv2)
     with open(path, mode='r', newline='') as infile:
         reader = csv.reader(infile)
-        dict2 = {rows[0]: rows[1] for rows in reader}
+        dict2 = {rows[0]: rows[args.col2] for rows in reader}
 
     # find intersections
     fSet = set(dict1)
@@ -71,16 +74,19 @@ for csv2 in files:
         relDiff.append(RD)
 
     aver = "{:.2%}".format(np.mean(relDiff))
-    med = "{:.2%}".format(np.median(relDiff))
+    med  = "{:.2%}".format(np.median(relDiff))
+    std  = "{:.2%}".format(np.std(relDiff))
     averRelError.append(aver)
     medianError.append(med)
+    standDev.append(std)
 
-lists = sorted(zip(*[c, averRelError]))
-x, y = list(zip(*lists))
+lists = sorted(zip(*[c, averRelError, medianError, standDev]))
+x, y, z, sd = list(zip(*lists))
 
 out = []  # out csv to save or print out
-for xx, yy in zip(x, y):
-    out.append(f"{xx}, {yy}")
+out.append(f"Concentration, average relative error, median, standard deviation")
+for xx, yy, zz, ss in zip(x, y, z, sd):
+    out.append(f"{xx}, {yy}, {zz}, {ss}")
 
 # plot
 plt.scatter(x, y, facecolors='none', edgecolors='black')
