@@ -67,11 +67,14 @@ for csv2 in files:
     relDiff = []  # relative difference
 
     for num, n in enumerate(sameId, start=1):
-        GT = float(dict1[n])
-        P = float(dict2[n])
-        AD = P - GT  # absolute difference
-        RD = np.abs(AD) / GT
-        relDiff.append(RD)
+        try:
+            GT = float(dict1[n])
+            P = float(dict2[n])
+            AD = P - GT  # absolute difference
+            RD = np.abs(AD) / GT
+            relDiff.append(RD)
+        except Exception as e:
+            print (e)
 
     aver = "{:.2%}".format(np.mean(relDiff))
     med  = "{:.2%}".format(np.median(relDiff))
