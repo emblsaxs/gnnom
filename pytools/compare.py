@@ -7,10 +7,12 @@ import argparse
 parser = argparse.ArgumentParser(description='Compare NN predictions.')
 parser.add_argument('csv1', metavar='csv1', type=str, help='path to the template csv file')
 parser.add_argument('csv2', metavar='csv2', type=str, help='path to the csv file for comparison')
+parser.add_argument('--col1', type=int, default=1, help='Column number from the template csv file (starts from 0)')
+parser.add_argument('--col2', type=int, default=1, help='Column number from the csv file for comparison (starts from 0)')
 
 parser.add_argument('-o', '--output', type=str, default="",
                     help='save output in CSV format')
-parser.add_argument('-m', '--metric', type=str, default="",
+parser.add_argument('-m', '--metric', type=str, default="l",
                     help='options: ad(absolute diff); rd(relative diff); h (histogram); l (csv1 vs csv2)')
 
 args = parser.parse_args()
@@ -32,11 +34,11 @@ if metric not in ms:
 # convert to dictionaries
 with open(csv1, mode='r', newline='') as infile:
     reader = csv.reader(infile)
-    dict1 = {rows[0]: rows[1] for rows in reader}
+    dict1 = {rows[0]: rows[args.col1] for rows in reader}
 
 with open(csv2, mode='r', newline='') as infile:
     reader = csv.reader(infile)
-    dict2 = {rows[0]: rows[1] for rows in reader}
+    dict2 = {rows[0]: rows[args.col2] for rows in reader}
 
 # find intersections
 fSet = set(dict1)
@@ -62,12 +64,12 @@ for num, n in enumerate(sameId, start=1):
     relDiff.append(RD)
     groundTruth.append(GT)
     predicted.append(P)
-    if metric is "ad":
+    if metric == "ad":
         out.append(f"{n}, {round(AD, 3)}")
     else:
         out.append(f"{n}, {round(RD, 3)}")
 # compute mean error and median
-if metric is "ad":
+if metric == "ad":
     aver = "{:.2%}".format(np.mean(absDiff))
     med = "{:.2%}".format(np.median(absDiff))
 else:
