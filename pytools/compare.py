@@ -20,6 +20,9 @@ args = parser.parse_args()
 import csv
 import numpy as np
 import matplotlib.pyplot as plt
+import plotly.express as px
+import plotly.io as pio
+pio.renderers.default = "browser"
 
 csv1 = args.csv1
 csv2 = args.csv2
@@ -54,7 +57,6 @@ relDiff = []  # relative difference
 groundTruth = []  # ground truth
 predicted = []  # predicted
 out = []  # csv to save or to print out
-
 for num, n in enumerate(sameId, start=1):
     GT = float(dict1[n])
     P = float(dict2[n])
@@ -90,9 +92,18 @@ if metric == "rd":
 
 # plot linear regression
 if metric == "l":
-    plt.scatter(groundTruth, predicted, c='tab:blue', alpha=0.3, edgecolors='none')
-    plt.xlabel('Ground truth')
-    plt.ylabel('Predicted')
+    #plt.scatter(groundTruth, predicted, c='tab:blue', alpha=0.3, edgecolors='none')
+    #plt.xlabel('Ground truth')
+    #plt.ylabel('Predicted')
+    linex = [0, max(groundTruth)]
+    liney = [0, max(groundTruth)]
+    fig = px.scatter(x=groundTruth, y=predicted, hover_name=sameId)
+    fig.add_shape(type="line",
+                  x0=0,
+                  y0=0,
+                  x1=max(groundTruth),
+                  y1=max(groundTruth))
+    fig.show()
 
 # plot histogram
 if metric == "h":
@@ -101,9 +112,9 @@ if metric == "h":
     plt.xlabel('Bins')
     plt.ylabel('Number per bin')
 
-plt.title(f"Mean: {aver}\nMedian: {med}")
-plt.grid(True)
-plt.show()
+#plt.title(f"Mean: {aver}\nMedian: {med}")
+#plt.grid(True)
+#plt.show()
 
 # write output csv or print out
 if outCsvPath != "":
