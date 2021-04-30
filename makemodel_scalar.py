@@ -12,7 +12,7 @@ parser.add_argument('epochs', metavar='epochs', type=int, help='number of epochs
 parser.add_argument('parameter', metavar='parameter', type=str, help='mw/dmax/rg')
 parser.add_argument('--units', type=int, default=40, help='number of units in the hidden layer (default: 40)')
 parser.add_argument('--first', type=int, default=1, help='index of the first point to use (default: 1)')
-parser.add_argument('--last', type=int, default=None, help='index of the last point to use (default: use all)')
+parser.add_argument('--last',  type=int, default=None, help='index of the last point to use (default: use all)')
 parser.add_argument('--weightsPath', '-w', default=None, type=str, help='path to the h5 file')
 parser.add_argument('--picklePath', '-p', default=None, type=str, help='path to the pickle file, by default data.p')
 
@@ -65,25 +65,29 @@ for f in folders:
 t = os.path.join(dataPath, "test", f)
 testNames = os.listdir(t)
 
+if args.picklePath and (args.first != 1 or args.last):
+    parser.error("If --picklePath is specified --first and --last will be ignored")
+
 print("Reading data files...")
 
 # process --first and --last
-firstPointIndex = int(args.first) - 1
+if args.first < 1:
+    parser.error("--first must be at least = 1")
+firstPointIndex = args.first - 1
 cur, __ = saxsdocument.read(dataFiles[0])
 dat = cur['s']
 if args.last:
-    if int(args.last) > len(dat):
-        print(f"--last must be less or equal to the number of points in data files: {args.last}")
-        quit()
-    lastPointIndex = int(args.last)
+    if args.last > len(dat):
+        parser.error(f"--last must be less or equal to the number of points in data files ({len(dat)})")
+    lastPointIndex = args.last
 else:
-    lastPointIndex = len(dat) - 1
+    lastPointIndex = len(dat)
 
 smin = dat[firstPointIndex]
-smax = dat[lastPointIndex]
+smax = dat[lastPointIndex - 1]
 if not args.picklePath:
-    Is, logFiles = readDatsAndLogs(dataFiles, logPath, firstPointIndex, lastPointIndex)
-    IsVal, logFilesVal = readDatsAndLogs(valFiles, logPath, firstPointIndex, lastPointIndex)
+    Is, logFiles       = readDatsAndLogs(dataFiles, logPath, firstPointIndex, lastPointIndex)
+    IsVal, logFilesVal = readDatsAndLogs(valFiles,  logPath, firstPointIndex, lastPointIndex)
     logFilesTest = readLogs(testNames, logPath)
     print("Parsing data log files...")
     parameters, outCsv = parseCrysolLogs(logFiles, par)
@@ -124,9 +128,9 @@ N = np.shape(Is)[1]
 output = np.shape(parameters)[1]
 
 # Normalise SAXS input
-dd = np.ones(np.shape(Is)[1])  # no division
-Is, stdIs, meanIs = normalise(Is, dd)
-IsVal, __, __ = normalise(IsVal, stdIs, meanIs)
+#dd = np.ones(np.shape(Is)[1])  # no division
+#Is, stdIs, meanIs = normalise(Is, dd)
+#IsVal, __, __ = normalise(IsVal, stdIs, meanIs)
 
 # # DEBUG
 # for I in IsVal[6:9]:
@@ -156,7 +160,8 @@ w = [np.zeros([args.units, 1]), np.array([avrg])]
 model.add(Dense(output, weights=w))
 model.add(Activation('relu'))
 # model.add(Dense(output))
-adama = optimizers.Adam(lr=0.001)
+adama = optimizers.Adam(lr=0.001) # , amsgrad=True, epsilon=0.1)  # lr=0.001 is default
+
 
 model.compile(optimizer=adama, loss='mse')
 

@@ -76,7 +76,7 @@ def readDatsAndLogs(dataFiles, logPath, firstPointIndex, lastPointIndex):
             print(f"No logs: removed from {file}")
             continue
         cur, prop = saxsdocument.read(file)
-        Is.append(cur['I'][firstPointIndex:lastPointIndex + 1])
+        Is.append(cur['I'][firstPointIndex:lastPointIndex])
         logFiles.append(l)
     return Is, logFiles
 
