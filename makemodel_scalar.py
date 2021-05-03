@@ -49,8 +49,8 @@ logPath = args.logPath
 dataFiles = []
 valFiles = []
 
-# folders = ["abs"]  # , "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
-folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
+folders = ["abs"]  # , "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
+# folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
 
 for f in folders:
     d = os.path.join(dataPath, "training", f)
@@ -85,6 +85,7 @@ else:
 
 smin = dat[firstPointIndex]
 smax = dat[lastPointIndex - 1]
+
 if not args.picklePath:
     Is, logFiles       = readDatsAndLogs(dataFiles, logPath, firstPointIndex, lastPointIndex)
     IsVal, logFilesVal = readDatsAndLogs(valFiles,  logPath, firstPointIndex, lastPointIndex)
@@ -100,11 +101,17 @@ if not args.picklePath:
     print("Parsing test log files...")
     parametersTest, outCsvTest = parseCrysolLogs(logFilesTest, par)
     print("...done.")
+
     pickle.dump([Is, logFiles, IsVal, logFilesVal, logFilesTest,
-                 parameters, parametersVal, parametersTest, outCsvTest], open("data.p", "wb"))
+                 parameters, parametersVal, parametersTest], open(f"data-{firstPointIndex}-{lastPointIndex}.p", "wb"))
+
+    # save test set ground truth values to csv
+    outCsvPath = f"ground-{par}-{len(logFilesTest)}.csv"
+    np.savetxt(outCsvPath, outCsvTest, delimiter=",", fmt='%s')
+    print(f"{outCsvPath} for test directory is written.")
 else:
     Is, logFiles, IsVal, logFilesVal, logFilesTest, \
-    parameters, parametersVal, parametersTest, outCsvTest = pickle.load(open(args.picklePath, "rb"))
+    parameters, parametersVal, parametersTest = pickle.load(open(args.picklePath, "rb"))
 
 print(f"Number of data files found: {len(dataFiles)}")
 print(f"Number of log  files found: {len(logFiles)}")
@@ -113,10 +120,6 @@ print(f"Number of validation log  files found: {len(logFilesVal)}")
 print("...done.")
 
 
-# save ground true values to csv
-outCsvPath = f"ground-{par}-{len(logFilesTest)}.csv"
-np.savetxt(outCsvPath, outCsvTest, delimiter=",", fmt='%s')
-print(f"{outCsvPath} for test directory is written.")
 
 # Perceptron neural network
 # tensorboard = keras.callbacks.TensorBoard(log_dir='./Graph', histogram_freq=0, write_graph=True, write_images=True)
