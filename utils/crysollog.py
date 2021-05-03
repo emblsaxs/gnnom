@@ -67,11 +67,8 @@ def readDatsAndLogs(dataFiles, logPath, firstPointIndex, lastPointIndex):
     for file in dataFiles:
         name = os.path.basename(file)
         if os.path.isdir(file): continue
-        # n = int(name[-5]) + 1
-        # log = name[:-6] + "_pdb" + str(n) + ".log"
-        log = name[:-4] + ".log"
-        l = os.path.join(logPath, log)
-        if os.path.exists(l) == False:
+        l = os.path.join(logPath, os.path.splitext(name)[0]) + ".log"
+        if not os.path.exists(l):
             dataFiles.remove(file)
             print(f"No logs: removed from {file}")
             continue
