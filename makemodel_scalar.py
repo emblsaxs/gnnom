@@ -70,23 +70,24 @@ if args.picklePath and (args.first != 1 or args.last):
 
 print("Reading data files...")
 
-# process --first and --last
-if args.first < 1:
-    parser.error("--first must be at least = 1")
-firstPointIndex = args.first - 1
-cur, __ = saxsdocument.read(dataFiles[0])
-dat = cur['s']
-if args.last:
-    if args.last > len(dat):
-        parser.error(f"--last must be less or equal to the number of points in data files ({len(dat)})")
-    lastPointIndex = args.last
-else:
-    lastPointIndex = len(dat)
-
-smin = dat[firstPointIndex]
-smax = dat[lastPointIndex - 1]
-
 if not args.picklePath:
+    # process --first and --last
+    if args.first < 1:
+        parser.error("--first must be at least = 1")
+    firstPointIndex = args.first - 1
+    cur, __ = saxsdocument.read(dataFiles[0])
+    dat = cur['s']
+    if args.last:
+        if args.last > len(dat):
+            parser.error(f"--last must be less or equal to the number of points in data files ({len(dat)})")
+        lastPointIndex = args.last
+    else:
+        lastPointIndex = len(dat)
+
+    smin = dat[firstPointIndex]
+    smax = dat[lastPointIndex - 1]
+
+    # read files
     Is, logFiles       = readDatsAndLogs(dataFiles, logPath, firstPointIndex, lastPointIndex)
     IsVal, logFilesVal = readDatsAndLogs(valFiles,  logPath, firstPointIndex, lastPointIndex)
     logFilesTest = readLogs(testNames, logPath)
@@ -102,8 +103,10 @@ if not args.picklePath:
     parametersTest, outCsvTest = parseCrysolLogs(logFilesTest, par)
     print("...done.")
 
+    # save to pickle
     pickle.dump([Is, logFiles, IsVal, logFilesVal, logFilesTest,
-                 parameters, parametersVal, parametersTest], open(f"data-{firstPointIndex}-{lastPointIndex}.p", "wb"))
+                 parameters, parametersVal, parametersTest,
+                 firstPointIndex, lastPointIndex, smin, smax], open(f"data-{firstPointIndex}-{lastPointIndex}.p", "wb"))
 
     # save test set ground truth values to csv
     outCsvPath = f"ground-{par}-{len(logFilesTest)}.csv"
@@ -111,7 +114,8 @@ if not args.picklePath:
     print(f"{outCsvPath} for test directory is written.")
 else:
     Is, logFiles, IsVal, logFilesVal, logFilesTest, \
-    parameters, parametersVal, parametersTest = pickle.load(open(args.picklePath, "rb"))
+    parameters, parametersVal, parametersTest, \
+    firstPointIndex, lastPointIndex, smin, smax = pickle.load(open(args.picklePath, "rb"))
 
 print(f"Number of data files found: {len(dataFiles)}")
 print(f"Number of log  files found: {len(logFiles)}")
