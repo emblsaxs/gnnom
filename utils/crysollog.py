@@ -69,7 +69,7 @@ def readDatsAndLogs(dataFiles, logPath, firstPointIndex, lastPointIndex):
         if os.path.isdir(file): continue
         l = os.path.join(logPath, os.path.splitext(name)[0]) + ".log"
         if not os.path.exists(l):
-            dataFiles.remove(file)
+            dataFiles.remove(file) # This has no effect?..
             print(f"No logs: removed from {file}")
             continue
         cur, prop = saxsdocument.read(file)
