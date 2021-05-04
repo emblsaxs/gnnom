@@ -78,7 +78,7 @@ for f in folders:
     for inputFilename in dataFiles:
         try:
             cur, __ = saxsdocument.read(os.path.join(t, inputFilename))
-            Is = cur['I'][firstPointIndex: lastPointIndex + 1]
+            Is = cur['I'][firstPointIndex:lastPointIndex]
 
         except Exception as e:
             print(f"Error: Could not read {inputFilename}:")
