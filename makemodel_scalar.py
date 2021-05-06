@@ -26,7 +26,8 @@ from keras.callbacks import ModelCheckpoint  # , TensorBoard
 from keras import optimizers  # , losses
 from keras.models import Sequential
 from keras.layers import Dense, Activation
-from normalisation.logarithm import normalise  # , unnormalise
+# from normalisation.logarithm import normalise  # , unnormalise
+from normalisation.meanvariance import normalise
 from utils.crysollog import parseCrysolLogs, readDatsAndLogs, readLogs
 
 import matplotlib
@@ -135,9 +136,9 @@ N = np.shape(Is)[1]
 output = np.shape(parameters)[1]
 
 # Normalise SAXS input
-#dd = np.ones(np.shape(Is)[1])  # no division
-#Is, stdIs, meanIs = normalise(Is, dd)
-#IsVal, __, __ = normalise(IsVal, stdIs, meanIs)
+# dd = np.ones(np.shape(Is)[1])  # no division
+# Is, stdIs, meanIs = normalise(Is)
+# IsVal, __, __ = normalise(IsVal, stdIs, meanIs)
 
 # # DEBUG
 # for I in IsVal[6:9]:
@@ -148,29 +149,31 @@ model = Sequential()
 # first layer
 # he = np.sqrt(0.06/N)
 # model.add(Dense(args.units, input_dim=N, weights = [np.random.uniform(0,he,[args.units, N])]))
+# model.add(Dense(args.units, input_dim=N, use_bias=True, kernel_initializer='glorot_uniform'))
+
 model.add(Dense(args.units, input_dim=N, use_bias=True, kernel_initializer='he_uniform'))
+
 # model.add(Dense(input_length, weights = [np.random.uniform(-he,he,[args.bottleneck_units, input_length]), averageIs]))
 # model.add(Dense(input_length, weights = [np.zeros([args.hidden_units, input_length]), averageIs]))
-model.add(Activation('relu'))
+model.add(Activation('tanh'))
 
 # second layer
-model.add(Dense(args.units, use_bias=True, kernel_initializer='he_uniform', bias_initializer='zeros'))
-model.add(Activation('relu'))
+# model.add(Dense(args.units, use_bias=True, kernel_initializer='he_uniform', bias_initializer='zeros'))
+# model.add(Activation('relu'))
 # third layer
-model.add(Dense(args.units, use_bias=True, kernel_initializer='he_uniform', bias_initializer='zeros'))
-model.add(Activation('relu'))
+# model.add(Dense(args.units, use_bias=True, kernel_initializer='he_uniform', bias_initializer='zeros'))
+# model.add(Activation('relu'))
 
 avrg = np.mean(parameters)
 print(f"Mean {par}: {avrg}")
 # marginal improvement
 w = [np.zeros([args.units, 1]), np.array([avrg])]
 model.add(Dense(output, weights=w))
-model.add(Activation('relu'))
-# model.add(Dense(output))
-adama = optimizers.Adam(lr=0.001) # , amsgrad=True, epsilon=0.1)  # lr=0.001 is default
+# model.add(Activation('relu'))
+adama = optimizers.Adam(lr=0.005) # , amsgrad=True, epsilon=0.1)  # lr=0.001 is default
 
 
-model.compile(optimizer=adama, loss='mse')
+model.compile(optimizer=adama, loss='mean_absolute_percentage_error') # was loss='mse'
 
 model_name = f"gnnom-{par}-{firstPointIndex}-{lastPointIndex}-e{args.epochs}-u{args.units}"
 
@@ -195,10 +198,15 @@ val_loss = train_history.history['val_loss']
 # Confirm that it works
 data = np.arange(N)
 
-# save 2d plot of weights in the first layer
-plt.imshow(model.get_weights()[0], cmap='coolwarm')
-plt.savefig('weights-' + model_name + '.png')
-plt.clf()
+# save a 2d plot of the weights of the first layer
+# plt.imshow(model.get_weights()[0], cmap='coolwarm')
+# plt.savefig('weights-' + model_name + '.png')
+# plt.clf()
+
+# save the weights of the first layer
+step = (smax - smin) / (lastPointIndex - firstPointIndex - 1)
+s = np.arange(smin, smax + step, step)
+np.savetxt(f'weights-{model_name}.int', np.column_stack((s, model.get_weights()[0])), fmt="%.8e")
 
 np.savetxt(f'loss-{model_name}.int', np.transpose(np.vstack((np.arange(num_epochs), loss, val_loss))), fmt="%.8e")
 
