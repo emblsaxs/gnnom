@@ -97,13 +97,16 @@ if metric == "l":
     #plt.ylabel('Predicted')
     linex = [0, max(groundTruth)]
     liney = [0, max(groundTruth)]
-    fig = px.scatter(x=groundTruth, y=predicted, hover_name=sameId)
+    fig = px.scatter(x=groundTruth, y=predicted, hover_name=sameId, title=f"{aver} - average relative error, {med} - median relative error")
     fig.add_shape(type="line",
                   x0=0,
                   y0=0,
                   x1=max(groundTruth),
                   y1=max(groundTruth))
+    fig.update_layout(xaxis_title="Ground truth (x)", yaxis_title="Predicted (y)")
     fig.show()
+    print(f"{aver} - average relative error")
+    print(f"{med} - median relative error")
 
 # plot histogram
 if metric == "h":
@@ -120,5 +123,5 @@ if metric == "h":
 if outCsvPath != "":
     np.savetxt(outCsvPath, out, delimiter=",", fmt='%s')
     print(f"{outCsvPath} is written.")
-else:
-    print("\n".join(out))
+# else:
+#     print("\n".join(out))
