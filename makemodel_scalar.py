@@ -106,7 +106,8 @@ if not args.picklePath:
     # save to pickle
     pickle.dump([Is, logFiles, IsVal, logFilesVal, logFilesTest,
                  parameters, parametersVal, parametersTest,
-                 firstPointIndex, lastPointIndex, smin, smax], open(f"data-{firstPointIndex}-{lastPointIndex}.p", "wb"))
+                 firstPointIndex, lastPointIndex, smin, smax],
+                open(f"data-{firstPointIndex}-{lastPointIndex}-{par}.p", "wb"))
 
     # save test set ground truth values to csv
     outCsvPath = f"ground-{par}-{len(logFilesTest)}.csv"
@@ -168,7 +169,7 @@ print(f"Mean {par}: {avrg}")
 w = [np.zeros([args.units, 1]), np.array([avrg])]
 model.add(Dense(output, weights=w))
 # model.add(Activation('relu'))
-adama = optimizers.Adam(lr=0.005)  # , amsgrad=True, epsilon=0.1)  # lr=0.001 is default
+adama = optimizers.Adam(lr=0.001)  # , amsgrad=True, epsilon=0.1)  # lr=0.001 is default
 
 model.compile(optimizer=adama, loss='mean_absolute_percentage_error')  # was loss='mse'
 
