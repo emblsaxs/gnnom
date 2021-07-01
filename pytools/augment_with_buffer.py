@@ -1,21 +1,27 @@
 #!/usr/bin/python
 import argparse
-import saxsdocument
-import numpy as np
 import os
 
-parser = argparse.ArgumentParser(description='Adds noise to the buffer and sample in .abs format. Example: python pytools\augment_with_buffer.py abs\ smoothed-water-final-x2_rebin.dat sec_0015_01220_stretched_rebinned_norm.dat -p tmp\ -ct 2 -a 0.00001 -b 0.0001 -c 0.00001')
-parser.add_argument('dataPath',        type=str, help='path to the folder with sample data')
-parser.add_argument('-p', '--prefix',  type=str, default="", help='add prefix to the rescaled files')
-parser.add_argument('--concentration', type=float,  default =1.0, help='concentration of the sample to simulate')
-parser.add_argument('buffer',          type=str, help='smooth cell + buffer file on absolute scale')
-parser.add_argument('noiseTemplate',   type=str, help='the sample file on absolute scale for noise estimate')
+import numpy as np
+import saxsdocument
+
+parser = argparse.ArgumentParser(
+    description='Adds noise to the buffer and sample in .abs format. Example: python pytools\augment_with_buffer.py abs\ smoothed-water-final-x2_rebin.dat sec_0015_01220_stretched_rebinned_norm.dat -p tmp\ -ct 2 -a 0.00001 -b 0.0001 -c 0.00001')
+parser.add_argument('dataPath', type=str, help='path to the folder with sample data')
+parser.add_argument('-p', '--prefix', type=str, default="", help='add prefix to the rescaled files')
+parser.add_argument('-ct', '--concentration', type=float, default=1.0, help='concentration of the sample to simulate')
+parser.add_argument('buffer', type=str, help='smooth cell + buffer file on absolute scale')
+parser.add_argument('noiseTemplate', type=str, help='the sample file on absolute scale for noise estimate')
 # a,b,c -- coefficients for buffer augmentation
 # sample = (sample + buffer) - c*(buffer + (a*s + b))
-parser.add_argument('-a', '--slope', type=float, default = 0, help='Sigma for a. <a> = 0; sample = (sample + buffer) - c*(buffer + (A*s + b)')
-parser.add_argument('-b', '--shift', type=float, default = 0, help='Sigma for b. <b> = 0; sample = (sample + buffer) - c*(buffer + (a*s + B)')
-parser.add_argument('-c', '--scale', type=float, default = 0, help='Sigma for c. <c> = 1; sample = (sample + buffer) - C*(buffer + (a*s + b)')
-parser.add_argument('--normalize-by-I0', type=bool, nargs='?', default = False, const = True, help='Normalize by I(0) from the sample data')
+parser.add_argument('-a', '--slope', type=float, default=0,
+                    help='Sigma for a. <a> = 0; sample = (sample + buffer) - c*(buffer + (A*s + b)')
+parser.add_argument('-b', '--shift', type=float, default=0,
+                    help='Sigma for b. <b> = 0; sample = (sample + buffer) - c*(buffer + (a*s + B)')
+parser.add_argument('-c', '--scale', type=float, default=0,
+                    help='Sigma for c. <c> = 1; sample = (sample + buffer) - C*(buffer + (a*s + b)')
+parser.add_argument('--normalize-by-I0', type=bool, nargs='?', default=False, const=True,
+                    help='Normalize by I(0) from the sample data')
 
 args = parser.parse_args()
 
@@ -77,5 +83,4 @@ for inputFilename in os.listdir(inputFolder):
         IsSub  = IsSub  / I0
         errSub = errSub / I0
     # save file
-    saxsdocument.write(f"{prefix}{inputFilename[:-4]}.dat", {'s': s,'I': IsSub,'Err': errSub}, property)
-
+    saxsdocument.write(f"{os.path.join(prefix, inputFilename[:-4])}.dat", {'s': s, 'I': IsSub, 'Err': errSub}, property)

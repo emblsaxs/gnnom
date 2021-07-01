@@ -25,6 +25,16 @@ folder = args.csv2
 
 outCsvPath = args.output
 
+
+# helper function
+def representsFloat(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+
 # convert to dictionaries
 with open(csv1, mode='r', newline='') as infile:
     reader = csv.reader(infile)
@@ -33,14 +43,16 @@ with open(csv1, mode='r', newline='') as infile:
 files = os.listdir(folder)
 c = []  # concentrations parsed from the names of csv files
 averRelError = []  # mean relative error
-medianError  = []  # median
+medianError = []  # median
 standDev     = []  # standard deviation
 
 # iterate over all csv files in the folder
 for csv2 in files:
     if not csv2.endswith(".csv"): continue
-
-    result = re.search('dat-c(.+)-result.csv', csv2)
+    if 'dat-c' not in csv2:
+        print(f"Skipping csv file {csv2}")
+        continue
+    result = re.search('dat-c(.+).csv', csv2)
     wha = result.group(1)
     if "025" in wha:
         conc = 0.25
@@ -51,9 +63,15 @@ for csv2 in files:
     c.append(conc)
     # parse ids and predicted values
     path = os.path.join(folder, csv2)
+    dict2 = {}
     with open(path, mode='r', newline='') as infile:
         reader = csv.reader(infile)
-        dict2 = {rows[0]: rows[args.col2] for rows in reader}
+        for num, rows in enumerate(reader):
+            if (len(rows) <= args.col2) or not representsFloat(rows[args.col2]):
+                print(f"Can't parse {rows} Line: {num} File: {csv2}")
+                continue
+            else:
+                dict2[rows[0]] = float(rows[args.col2]) / 1.000
 
     # find intersections
     fSet = set(dict1)

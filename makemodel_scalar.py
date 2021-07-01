@@ -27,7 +27,7 @@ from keras import optimizers  # , losses
 from keras.models import Sequential
 from keras.layers import Dense, Activation
 # from normalisation.logarithm import normalise  # , unnormalise
-from normalisation.meanvariance import normalise
+# from normalisation.meanvariance import normalise
 from utils.crysollog import parseCrysolLogs, readDatsAndLogs, readLogs
 
 import matplotlib
@@ -35,7 +35,6 @@ import pickle
 
 # AGG backend is for writing to file, not for rendering in a window
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 # todo: tf.random.set_seed(5)
 import time
 
@@ -50,8 +49,8 @@ logPath = args.logPath
 dataFiles = []
 valFiles = []
 
-folders = ["abs"]  # , "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
-# folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
+# folders = ["abs"]  # , "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
+folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
 
 for f in folders:
     d = os.path.join(dataPath, "training", f)
@@ -158,22 +157,20 @@ model.add(Dense(args.units, input_dim=N, use_bias=True, kernel_initializer='he_u
 model.add(Activation('tanh'))
 
 # second layer
-# model.add(Dense(args.units, use_bias=True, kernel_initializer='he_uniform', bias_initializer='zeros'))
-# model.add(Activation('relu'))
+model.add(Dense(args.units, use_bias=True, kernel_initializer='he_uniform', bias_initializer='zeros'))
+model.add(Activation('tanh'))
 # third layer
-# model.add(Dense(args.units, use_bias=True, kernel_initializer='he_uniform', bias_initializer='zeros'))
-# model.add(Activation('relu'))
-
+model.add(Dense(args.units, use_bias=True, kernel_initializer='he_uniform', bias_initializer='zeros'))
+model.add(Activation('tanh'))
 avrg = np.mean(parameters)
 print(f"Mean {par}: {avrg}")
 # marginal improvement
 w = [np.zeros([args.units, 1]), np.array([avrg])]
 model.add(Dense(output, weights=w))
 # model.add(Activation('relu'))
-adama = optimizers.Adam(lr=0.005) # , amsgrad=True, epsilon=0.1)  # lr=0.001 is default
+adama = optimizers.Adam(lr=0.005)  # , amsgrad=True, epsilon=0.1)  # lr=0.001 is default
 
-
-model.compile(optimizer=adama, loss='mean_absolute_percentage_error') # was loss='mse'
+model.compile(optimizer=adama, loss='mean_absolute_percentage_error')  # was loss='mse'
 
 model_name = f"gnnom-{par}-{firstPointIndex}-{lastPointIndex}-e{args.epochs}-u{args.units}"
 
@@ -182,10 +179,10 @@ if args.weightsPath:
 
 # Check there are no Nans after normalisation
 if np.isnan(Is).any():
-    print("Error: Is matrix contain Nans!")
+    print("Error: Is matrix contains Nans!")
     quit()
 if np.isnan(IsVal).any():
-    print("Error: IsVal matrix contain Nans")
+    print("Error: IsVal matrix contains Nans")
     quit()
 
 train_history = model.fit(np.array(Is), np.array(parameters), epochs=num_epochs, batch_size=len(dataFiles),

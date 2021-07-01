@@ -68,6 +68,7 @@ except Exception as e:
 dataFiles = os.listdir(args.dataPath)
 dataFiles.sort()
 folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
+# folders = ["abs"]
 
 for f in folders:
     outCsv = []
@@ -139,7 +140,7 @@ for f in folders:
 
     if outCsvPath != "":
         np.savetxt(f"{outCsvPath}-{f}.csv", outCsv, delimiter=",", fmt='%s')
-        print(f"{f}-{outCsvPath} is written.")
+        print(f"{outCsvPath}-{f}.csv is written.")
     else:
         print(f"Folder {f}:")
         print("\n".join(outCsv))
