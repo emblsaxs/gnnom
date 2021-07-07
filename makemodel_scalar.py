@@ -10,7 +10,7 @@ parser.add_argument('logPath', metavar='logs', type=str, help='path to the log f
 # parser.add_argument('valPath',     metavar='val', default = "", type=str, help='path to the validation data folder')
 parser.add_argument('epochs', metavar='epochs', type=int, help='number of epochs')
 parser.add_argument('parameter', metavar='parameter', type=str, help='mw/dmax/rg')
-parser.add_argument('--units', type=int, default=40, help='number of units in the hidden layer (default: 40)')
+parser.add_argument('--units', type=int, default=80, help='number of units in the hidden layer (default: 40)')
 parser.add_argument('--first', type=int, default=1, help='index of the first point to use (default: 1)')
 parser.add_argument('--last',  type=int, default=None, help='index of the last point to use (default: use all)')
 parser.add_argument('--weightsPath', '-w', default=None, type=str, help='path to the h5 file')
@@ -49,8 +49,8 @@ logPath = args.logPath
 dataFiles = []
 valFiles = []
 
-# folders = ["abs"]  # , "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
-folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
+folders = ["abs"]  # , "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
+# folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
 
 for f in folders:
     d = os.path.join(dataPath, "training", f)
@@ -169,7 +169,7 @@ print(f"Mean {par}: {avrg}")
 w = [np.zeros([args.units, 1]), np.array([avrg])]
 model.add(Dense(output, weights=w))
 # model.add(Activation('relu'))
-adama = optimizers.Adam(lr=0.001)  # , amsgrad=True, epsilon=0.1)  # lr=0.001 is default
+adama = optimizers.Adam(lr=0.003)  # , amsgrad=True, epsilon=0.1)  # lr=0.001 is default
 
 model.compile(optimizer=adama, loss='mean_absolute_percentage_error')  # was loss='mse'
 
