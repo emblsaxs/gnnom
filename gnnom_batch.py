@@ -37,7 +37,13 @@ try:
         stdIs = json_data['stdIs']
     elif 'meanIs' not in json_data:
         print(f"ACHTUNG! "
-              f"{jsonFilename} does not contain normalization coefficients!"
+              f"{jsonFilename} does not contain input normalization coefficients!"
+              f"Proceeding without normalization...")
+    if 'outputNormalization' in json_data:
+        maxValue = float(json_data['outputNormalization'][0])
+    elif 'outputNormalization' not in json_data:
+        print(f"ACHTUNG! "
+              f"{jsonFilename} does not contain output normalization coefficient!"
               f"Proceeding without normalization...")
     # Compulsory fields in json
     smin = (float)(json_data['smin'])
@@ -136,7 +142,11 @@ for f in folders:
 
         else:  # scalar model
             for number in pred[0]:
-                outCsv.append(f"{inputFilename[:-4]},  {round(number, 3)}")
+                try:
+                    number = number * maxValue
+                except:
+                    pass
+                outCsv.append(f"{inputFilename[:-4]},  {number:.3f}")
 
     if outCsvPath != "":
         np.savetxt(f"{outCsvPath}-{f}.csv", outCsv, delimiter=",", fmt='%s')

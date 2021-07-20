@@ -71,7 +71,7 @@ for csv2 in files:
                 print(f"Can't parse {rows} Line: {num} File: {csv2}")
                 continue
             else:
-                dict2[rows[0]] = float(rows[args.col2]) / 1.000
+                dict2[rows[0]] = float(rows[args.col2]) / 1000
 
     # find intersections
     fSet = set(dict1)

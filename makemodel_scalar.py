@@ -49,8 +49,8 @@ logPath = args.logPath
 dataFiles = []
 valFiles = []
 
-folders = ["abs"]  # , "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
-# folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
+# folders = ["abs"]  # , "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
+folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
 
 for f in folders:
     d = os.path.join(dataPath, "training", f)
@@ -88,15 +88,18 @@ if not args.picklePath:
     smax = dat[lastPointIndex - 1]
 
     # read files
-    Is, logFiles       = readDatsAndLogs(dataFiles, logPath, firstPointIndex, lastPointIndex)
-    IsVal, logFilesVal = readDatsAndLogs(valFiles,  logPath, firstPointIndex, lastPointIndex)
+    Is, logFiles = readDatsAndLogs(dataFiles, logPath, firstPointIndex, lastPointIndex)
+    IsVal, logFilesVal = readDatsAndLogs(valFiles, logPath, firstPointIndex, lastPointIndex)
     logFilesTest = readLogs(testNames, logPath)
     print("Parsing data log files...")
     parameters, outCsv = parseCrysolLogs(logFiles, par)
+    maxValue = max(parameters)
+    parameters = np.array(parameters) / maxValue
     print("...done.")
 
     print("Parsing validation log files...")
     parametersVal, outCsvVal = parseCrysolLogs(logFilesVal, par)
+    parametersVal = np.array(parametersVal) / maxValue
     print("...done.")
 
     print("Parsing test log files...")
@@ -151,25 +154,26 @@ model = Sequential()
 # model.add(Dense(args.units, input_dim=N, weights = [np.random.uniform(0,he,[args.units, N])]))
 # model.add(Dense(args.units, input_dim=N, use_bias=True, kernel_initializer='glorot_uniform'))
 
-model.add(Dense(args.units, input_dim=N, use_bias=True, kernel_initializer='he_uniform'))
+model.add(Dense(args.units, input_dim=N, use_bias=False, kernel_initializer='he_uniform'))
 
 # model.add(Dense(input_length, weights = [np.random.uniform(-he,he,[args.bottleneck_units, input_length]), averageIs]))
 # model.add(Dense(input_length, weights = [np.zeros([args.hidden_units, input_length]), averageIs]))
 model.add(Activation('tanh'))
 
 # second layer
-model.add(Dense(args.units, use_bias=True, kernel_initializer='he_uniform', bias_initializer='zeros'))
+model.add(Dense(args.units, use_bias=False, kernel_initializer='he_uniform'))
 model.add(Activation('tanh'))
 # third layer
-model.add(Dense(args.units, use_bias=True, kernel_initializer='he_uniform', bias_initializer='zeros'))
-model.add(Activation('tanh'))
-avrg = np.mean(parameters)
-print(f"Mean {par}: {avrg}")
+# model.add(Dense(args.units, use_bias=False, kernel_initializer='he_uniform'))
+# model.add(Activation('tanh'))
+# avrg = np.mean(parameters)
+# print(f"Mean {par}: {avrg}")
 # marginal improvement
-w = [np.zeros([args.units, 1]), np.array([avrg])]
-model.add(Dense(output, weights=w))
+# w = [np.zeros([args.units, 1]), np.array([avrg])]
+model.add(Dense(output))  # , weights=w))
 # model.add(Activation('relu'))
-adama = optimizers.Adam(lr=0.003)  # , amsgrad=True, epsilon=0.1)  # lr=0.001 is default
+
+adama = optimizers.Adam(lr=0.005)  # , amsgrad=True, epsilon=0.1)  # lr=0.001 is default
 
 model.compile(optimizer=adama, loss='mean_absolute_percentage_error')  # was loss='mse'
 
@@ -219,6 +223,7 @@ model_json['smin'] = smin
 model_json['smax'] = smax
 model_json['firstPointIndex'] = firstPointIndex  # including, starts from 0
 model_json['lastPointIndex'] = lastPointIndex  # excluding
+model_json['outputNormalization'] = maxValue
 try:
     model_json['meanIs'] = list(meanIs)
     model_json['stdIs'] = list(stdIs)
