@@ -17,12 +17,14 @@ import numpy as np
 import os
 import json
 from normalisation.logarithm import normalise  # , unnormalise
+from normalisation.meanvariance import normalise
+
 
 jsonFilename  = args.architecture
 h5Filename    = args.weights
 inputFolder   = args.dataPath
 outCsvPath    = args.output
-stdpddf       = 1.0
+multiplier    = 1.0
 
 try:
     # load json and create model
@@ -31,19 +33,13 @@ try:
     json_data = json.loads(loadedModelJson)
     # Optional fields in json
     if 'Normalization coefficient' in json_data:
-        stdpddf = float(json_data['Normalization coefficient'])
+        multiplier = float(json_data['Normalization coefficient'])
     if 'meanIs' in json_data:
         meanIs = json_data['meanIs']
         stdIs = json_data['stdIs']
     elif 'meanIs' not in json_data:
         print(f"ACHTUNG! "
-              f"{jsonFilename} does not contain input normalization coefficients!"
-              f"Proceeding without normalization...")
-    if 'outputNormalization' in json_data:
-        maxValue = float(json_data['outputNormalization'][0])
-    elif 'outputNormalization' not in json_data:
-        print(f"ACHTUNG! "
-              f"{jsonFilename} does not contain output normalization coefficient!"
+              f"{jsonFilename} does not contain normalization coefficients!"
               f"Proceeding without normalization...")
     # Compulsory fields in json
     smin = (float)(json_data['smin'])
@@ -79,7 +75,7 @@ folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c
 for f in folders:
     outCsv = []
     print(f"Processing folder: {f}")
-    t = os.path.join(args.dataPath, "test", f)
+    t = os.path.join(args.dataPath, f)
     dataFiles = os.listdir(t)
     dataFiles.sort()
     for inputFilename in dataFiles:
@@ -137,16 +133,12 @@ for f in folders:
             r = np.arange(0.0, len(pred[0]) * 0.25, 0.25)
             outCsv.append(inputFilename[:-4] + ', ' + str(round(r[-1], 3)))
             # print(f"{len(r)} - {len(pred[0])} - {r[-1]}") # DEBUG
-            pddf_predicted = np.vstack((r, stdpddf * pred[0]))
+            pddf_predicted = np.vstack((r, multiplier * pred[0]))
             np.savetxt(inputFilename[:-4], np.transpose(pddf_predicted), fmt="%.8e")
 
         else:  # scalar model
             for number in pred[0]:
-                try:
-                    number = number * maxValue
-                except:
-                    pass
-                outCsv.append(f"{inputFilename[:-4]},  {number:.3f}")
+                outCsv.append(f"{inputFilename[:-4]},  {round(multiplier * number, 3)}")
 
     if outCsvPath != "":
         np.savetxt(f"{outCsvPath}-{f}.csv", outCsv, delimiter=",", fmt='%s')
