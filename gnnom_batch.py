@@ -46,6 +46,7 @@ try:
     smax = (float)(json_data['smax'])
     firstPointIndex = (int)(json_data['firstPointIndex'])
     lastPointIndex = (int)(json_data['lastPointIndex'])
+    inputLength = lastPointIndex - firstPointIndex
 
     jsonFile.close()
     loadedModel = model_from_json(loadedModelJson)
@@ -69,8 +70,8 @@ except Exception as e:
 
 dataFiles = os.listdir(args.dataPath)
 dataFiles.sort()
-folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
-# folders = ["abs"]
+# folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
+folders = ["."]
 
 for f in folders:
     outCsv = []
@@ -81,7 +82,15 @@ for f in folders:
     for inputFilename in dataFiles:
         try:
             cur, __ = saxsdocument.read(os.path.join(t, inputFilename))
-            Is = cur['I'][firstPointIndex:lastPointIndex]
+
+            s  = np.round(cur['s'], 3)
+            firstSIndex = np.where(s == round(smin, 3))[0][0]
+            lastSIndex  = np.where(s == round(smax, 3))[0][0] + 1
+
+            if (lastSIndex - firstSIndex) != inputLength:
+                print(f"{inputFilename} wrong grid, skipping.")
+                continue
+            Is = cur['I'][firstSIndex:lastSIndex]
 
         except Exception as e:
             print(f"Error: Could not read {inputFilename}:")
@@ -103,17 +112,6 @@ for f in folders:
         #    s  = np.hstack((s_head, s))
         #    Is = np.hstack((Is_head, Is))
 
-        # if len(Is[firstPointIndex:lastPointIndex]) != inputLength:
-        #    print(f"{inputFilename} too short, skipping.")
-        #    continue
-
-        # if round(s[firstPointIndex], 3) != round(smin, 3):
-        #    print(f"{inputFilename}: point {firstPointIndex} has s={s[firstPointIndex]}, expected s={smin}")
-        #    exit()
-
-        # if round(s[lastPointIndex - 1], 3) != round(smax, 3):
-        #    print(f"{inputFilename}: point {lastPointIndex - 1} has s={s[lastPointIndex]}, expected s={smax}")
-        #    exit()
         try:
             Is, __, __ = normalise(Is, stdIs, meanIs)
         except:
