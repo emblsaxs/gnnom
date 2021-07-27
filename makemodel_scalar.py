@@ -25,7 +25,8 @@ import json
 from keras.callbacks import ModelCheckpoint  # , TensorBoard
 from keras import optimizers  # , losses
 from keras.models import Sequential
-from keras.layers import Dense, Activation
+from keras.layers import Dense, Activation, BatchNormalization
+from keras.regularizers import l2
 # from normalisation.logarithm import normalise  # , unnormalise
 # from normalisation.meanvariance import normalise
 from utils.crysollog import parseCrysolLogs, readDatsAndLogs, readLogs
@@ -35,6 +36,7 @@ import pickle
 
 # AGG backend is for writing to file, not for rendering in a window
 matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 # todo: tf.random.set_seed(5)
 import time
 
@@ -88,18 +90,15 @@ if not args.picklePath:
     smax = dat[lastPointIndex - 1]
 
     # read files
-    Is, logFiles = readDatsAndLogs(dataFiles, logPath, firstPointIndex, lastPointIndex)
-    IsVal, logFilesVal = readDatsAndLogs(valFiles, logPath, firstPointIndex, lastPointIndex)
+    Is, logFiles       = readDatsAndLogs(dataFiles, logPath, firstPointIndex, lastPointIndex)
+    IsVal, logFilesVal = readDatsAndLogs(valFiles,  logPath, firstPointIndex, lastPointIndex)
     logFilesTest = readLogs(testNames, logPath)
     print("Parsing data log files...")
     parameters, outCsv = parseCrysolLogs(logFiles, par)
-    maxValue = max(parameters)
-    parameters = np.array(parameters) / maxValue
     print("...done.")
 
     print("Parsing validation log files...")
     parametersVal, outCsvVal = parseCrysolLogs(logFilesVal, par)
-    parametersVal = np.array(parametersVal) / maxValue
     print("...done.")
 
     print("Parsing test log files...")
@@ -138,10 +137,16 @@ N = np.shape(Is)[1]
 # Rg, Dmax, MW
 output = np.shape(parameters)[1]
 
-# Normalise SAXS input
-# dd = np.ones(np.shape(Is)[1])  # no division
-# Is, stdIs, meanIs = normalise(Is)
-# IsVal, __, __ = normalise(IsVal, stdIs, meanIs)
+# Normalize SAXS input
+#dd = np.ones(np.shape(Is)[1])  # no division
+#Is, stdIs, meanIs = normalise(Is, dd)
+#IsVal, __, __ = normalise(IsVal, dd, meanIs)
+
+# Normalize Rg, Dmax, MW
+multiplier = np.max(parameters)
+parameters = np.divide(parameters, multiplier)
+parametersVal = np.divide(parametersVal, multiplier)
+parametersTest = np.divide(parametersTest, multiplier)
 
 # # DEBUG
 # for I in IsVal[6:9]:
@@ -154,28 +159,32 @@ model = Sequential()
 # model.add(Dense(args.units, input_dim=N, weights = [np.random.uniform(0,he,[args.units, N])]))
 # model.add(Dense(args.units, input_dim=N, use_bias=True, kernel_initializer='glorot_uniform'))
 
-model.add(Dense(args.units, input_dim=N, use_bias=False, kernel_initializer='he_uniform'))
+
+model.add(Dense(args.units, input_dim=N, use_bias=False, kernel_initializer='glorot_uniform', kernel_regularizer=l2(0.00001)))
+
+BatchNormalization(axis=1)
 
 # model.add(Dense(input_length, weights = [np.random.uniform(-he,he,[args.bottleneck_units, input_length]), averageIs]))
 # model.add(Dense(input_length, weights = [np.zeros([args.hidden_units, input_length]), averageIs]))
 model.add(Activation('tanh'))
 
 # second layer
-model.add(Dense(args.units, use_bias=False, kernel_initializer='he_uniform'))
-model.add(Activation('tanh'))
-# third layer
-# model.add(Dense(args.units, use_bias=False, kernel_initializer='he_uniform'))
+# model.add(Dense(args.units, use_bias=False, kernel_initializer='glorot_uniform', kernel_regularizer=l2(0.0)))
 # model.add(Activation('tanh'))
+# third layer
+#model.add(Dense(args.units, use_bias=False, kernel_initializer='glorot_uniform', kernel_regularizer=l2(0.0)))
+#model.add(Activation('tanh'))
 # avrg = np.mean(parameters)
 # print(f"Mean {par}: {avrg}")
 # marginal improvement
 # w = [np.zeros([args.units, 1]), np.array([avrg])]
-model.add(Dense(output))  # , weights=w))
+# model.add(Dense(output, weights=w))
 # model.add(Activation('relu'))
+model.add(Dense(output, use_bias=False))
 
-adama = optimizers.Adam(lr=0.005)  # , amsgrad=True, epsilon=0.1)  # lr=0.001 is default
+adama = optimizers.Adam(lr=0.005) # , amsgrad=True, epsilon=0.1)  # lr=0.001 is default
 
-model.compile(optimizer=adama, loss='mean_absolute_percentage_error')  # was loss='mse'
+model.compile(optimizer=adama, loss='mean_absolute_percentage_error') # was loss='mse'
 
 model_name = f"gnnom-{par}-{firstPointIndex}-{lastPointIndex}-e{args.epochs}-u{args.units}"
 
@@ -190,7 +199,7 @@ if np.isnan(IsVal).any():
     print("Error: IsVal matrix contains Nans")
     quit()
 
-train_history = model.fit(np.array(Is), np.array(parameters), epochs=num_epochs, batch_size=len(dataFiles),
+train_history = model.fit(np.array(Is), np.array(parameters), epochs=num_epochs, batch_size=128, # len(dataFiles),
                           validation_data=(np.array(IsVal), np.array(parametersVal)),
                           callbacks=[ModelCheckpoint(model_name + '.h5', save_best_only=True)])
 
@@ -201,20 +210,27 @@ val_loss = train_history.history['val_loss']
 data = np.arange(N)
 
 # save a 2d plot of the weights of the first layer
-# plt.imshow(model.get_weights()[0], cmap='coolwarm')
-# plt.savefig('weights-' + model_name + '.png')
-# plt.clf()
+plt.imshow(model.get_weights()[1], cmap='coolwarm')
+plt.savefig('weights-' + model_name + '-1.png')
+plt.clf()
+
+# save a 2d plot of the weights of the second layer
+#plt.imshow(model.get_weights()[2], cmap='coolwarm')
+#plt.savefig('weights-' + model_name + '-2.png')
+#plt.clf()
 
 # save the weights of the first layer
 step = (smax - smin) / (lastPointIndex - firstPointIndex - 1)
 s = np.arange(smin, smax + step, step)
-np.savetxt(f'weights-{model_name}.int', np.column_stack((s, model.get_weights()[0])), fmt="%.8e")
+np.savetxt(f'weights-{model_name}-0.int', np.column_stack((s, model.get_weights()[0])), fmt="%.8e")
+# np.savetxt(f'weights-{model_name}-1.int', np.column_stack((s, np.transpose(model.get_weights()[1]) * model.get_weights()[0])), fmt="%.8e")
 
+# save the loss history
 np.savetxt(f'loss-{model_name}.int', np.transpose(np.vstack((np.arange(num_epochs), loss, val_loss))), fmt="%.8e")
 
-scores = model.evaluate(np.array(IsVal), np.array(parametersVal), verbose=0)
-print(f"Metrics: {model.metrics_names}")
-print(f"Scores: {scores}")
+# scores = model.evaluate(np.array(IsVal), np.array(parametersVal), verbose=0)
+# print(f"Metrics: {model.metrics_names}")
+# print(f"Scores: {scores}")
 
 # serialize model to JSON
 model_str = model.to_json()
@@ -223,12 +239,12 @@ model_json['smin'] = smin
 model_json['smax'] = smax
 model_json['firstPointIndex'] = firstPointIndex  # including, starts from 0
 model_json['lastPointIndex'] = lastPointIndex  # excluding
-model_json['outputNormalization'] = maxValue
 try:
     model_json['meanIs'] = list(meanIs)
     model_json['stdIs'] = list(stdIs)
 except:
     print("No normalization has been applied.")
+model_json['Normalization coefficient'] = multiplier
 # model_json['KratkyDegree']    = args.degree
 # compute elapsed time
 end = time.time()
