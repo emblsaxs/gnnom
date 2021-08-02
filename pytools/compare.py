@@ -58,22 +58,21 @@ groundTruth = []  # ground truth
 predicted = []  # predicted
 out = []  # csv to save or to print out
 outliers = 0
-for num, n in enumerate(sameId, start=1):
-    GT = float(dict1[n]) * 1000
-    P = float(dict2[n])
-    if P <= 0:
-        outliers += 1
-        continue
+for id in sameId:
+    GT = float(dict1[id]) # * 1000  # sasflow results: to convert from Da to kDa
+    P  = float(dict2[id])
     AD = P - GT  # absolute difference
     RD = np.abs(AD) / GT
-    absDiff.append(AD)
-    relDiff.append(RD)
+    if P > 0:
+        absDiff.append(AD)
+        relDiff.append(RD)
+    else: outliers += 1
     groundTruth.append(GT)
     predicted.append(P)
     if metric == "ad":
-        out.append(f"{n}, {round(AD, 3)}")
+        out.append(f"{id}, {round(AD, 3)}")
     else:
-        out.append(f"{n}, {round(RD, 3)}")
+        out.append(f"{id}, {round(RD, 3)}")
 # compute mean error and median
 if metric == "ad":
     aver = "{:.2%}".format(np.mean(absDiff))
@@ -111,7 +110,7 @@ if metric == "l":
     fig.show()
     print(f"{aver} - average relative error")
     print(f"{med} - median relative error")
-    print(f"{outliers} outliers omitted")
+    print(f"{outliers} outlier(s) omitted")
 
 # plot histogram
 if metric == "h":
