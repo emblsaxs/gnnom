@@ -57,9 +57,13 @@ relDiff = []  # relative difference
 groundTruth = []  # ground truth
 predicted = []  # predicted
 out = []  # csv to save or to print out
+outliers = 0
 for num, n in enumerate(sameId, start=1):
-    GT = float(dict1[n])
+    GT = float(dict1[n]) * 1000
     P = float(dict2[n])
+    if P <= 0:
+        outliers += 1
+        continue
     AD = P - GT  # absolute difference
     RD = np.abs(AD) / GT
     absDiff.append(AD)
@@ -107,6 +111,7 @@ if metric == "l":
     fig.show()
     print(f"{aver} - average relative error")
     print(f"{med} - median relative error")
+    print(f"{outliers} outliers omitted")
 
 # plot histogram
 if metric == "h":
