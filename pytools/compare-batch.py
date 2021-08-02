@@ -27,10 +27,11 @@ outCsvPath = args.output
 
 
 # helper function
-def representsFloat(s):
+def representsPositiveFloat(s):
     try:
-        float(s)
-        return True
+        f = float(s)
+        if f >= 0: return True
+        else: return False
     except ValueError:
         return False
 
@@ -67,11 +68,11 @@ for csv2 in files:
     with open(path, mode='r', newline='') as infile:
         reader = csv.reader(infile)
         for num, rows in enumerate(reader):
-            if (len(rows) <= args.col2) or not representsFloat(rows[args.col2]):
+            if (len(rows) <= args.col2) or not representsPositiveFloat(rows[args.col2]):
                 print(f"Can't parse {rows} Line: {num} File: {csv2}")
                 continue
             else:
-                dict2[rows[0]] = float(rows[args.col2]) / 1000
+                dict2[rows[0]] = float(rows[args.col2]) / 1.000
 
     # find intersections
     fSet = set(dict1)
