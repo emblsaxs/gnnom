@@ -3,6 +3,7 @@ Fast comparison of prediction against the ground truth.
 Using CVS files and different metrics
 """
 import argparse
+import os.path
 
 parser = argparse.ArgumentParser(description='Compare NN predictions.')
 parser.add_argument('csv1', metavar='csv1', type=str, help='path to the template csv file')
@@ -100,7 +101,11 @@ if metric == "l":
     #plt.ylabel('Predicted')
     linex = [0, max(groundTruth)]
     liney = [0, max(groundTruth)]
-    fig = px.scatter(x=groundTruth, y=predicted, hover_name=sameId, title=f"{aver} - average relative error, {med} - median relative error")
+    predictedFilename = os.path.splitext(os.path.basename(csv2))[0]
+    fig = px.scatter(x=groundTruth, y=predicted, hover_name=sameId,
+                     title= f"{predictedFilename}: "
+                     f"{aver} - average relative error, {med} - median relative error. "
+                     f"Number of negative outliers: {outliers}")
     fig.add_shape(type="line",
                   x0=0,
                   y0=0,
