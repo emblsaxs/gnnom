@@ -44,8 +44,9 @@ with open(csv1, mode='r', newline='') as infile:
 files = os.listdir(folder)
 c = []  # concentrations parsed from the names of csv files
 averRelError = []  # mean relative error
-medianError = []  # median
+medianError  = []  # median
 standDev     = []  # standard deviation
+outliers     = [] # outliers
 
 # iterate over all csv files in the folder
 for csv2 in files:
@@ -65,11 +66,13 @@ for csv2 in files:
     # parse ids and predicted values
     path = os.path.join(folder, csv2)
     dict2 = {}
+    outlierNum = 0
     with open(path, mode='r', newline='') as infile:
         reader = csv.reader(infile)
         for num, rows in enumerate(reader):
             if (len(rows) <= args.col2) or not representsPositiveFloat(rows[args.col2]):
                 print(f"Can't parse {rows} Line: {num} File: {csv2}")
+                outlierNum += 1
                 continue
             else:
                 dict2[rows[0]] = float(rows[args.col2]) / 1.000
@@ -101,14 +104,15 @@ for csv2 in files:
     averRelError.append(aver)
     medianError.append(med)
     standDev.append(std)
+    outliers.append(outlierNum)
 
-lists = sorted(zip(*[c, averRelError, medianError, standDev]))
-x, y, z, sd = list(zip(*lists))
+lists = sorted(zip(*[c, averRelError, medianError, standDev, outliers]))
+x, y, z, sd, on = list(zip(*lists))
 
 out = []  # out csv to save or print out
-out.append(f"Concentration, average relative error, median, standard deviation")
-for xx, yy, zz, ss in zip(x, y, z, sd):
-    out.append(f"{xx}, {yy}, {zz}, {ss}")
+out.append(f"Concentration, average relative error, median, standard deviation, outliers")
+for xx, yy, zz, ss, onon in zip(x, y, z, sd, on):
+    out.append(f"{xx}, {yy}, {zz}, {ss}, {onon}")
 
 # plot
 plt.scatter(x, y, facecolors='none', edgecolors='black')
