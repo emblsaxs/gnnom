@@ -20,7 +20,7 @@ def parseCrysolLogs(logFiles, par):
         lines = [line.strip() for line in open(f)]
         rgdmaxmwv = []
         # Read 'Molecular Weight: 0.4330E+06':
-        if par not in ["rg", "dmax", "mw", "v"]:
+        if par not in ["rg", "dmax", "mw", "vshell", "vexc"]:
             print(f"Wrong parameter {par}! Please enter rg, dmax or mw")
         for line in lines:
             if par == "rg":
@@ -39,19 +39,26 @@ def parseCrysolLogs(logFiles, par):
                     break
             if par == "mw":
                 if "Weight" in line:
-                    mw = float(line.split()[2]) / 1000.0
+                    mw = float(line.split()[2])
                     # print(f"{file}: {mw} kDa")
                     rgdmaxmwv.append(mw)
                     parameters.append(rgdmaxmwv)
                     outCsv.append(file[:-4] + ', ' + str(round(mw, 3)))
                     break
-            if par == "v":
-                if "Displaced volume" in line:
-                    v = float(line.split()[2]) / 1000.0
+            if par == "vshell":
+                if "Shell    volume" in line:
+                    vshell = float(line.split()[3])
                     # print(f"{file}: {v} nm^3")
-                    rgdmaxmwv.append(v)
+                    rgdmaxmwv.append(vshell)
                     parameters.append(rgdmaxmwv)
-                    outCsv.append(file[:-4] + ', ' + str(round(v, 3)))
+                    outCsv.append(file[:-4] + ', ' + str(round(vshell, 3)))
+                    break
+            if par == "vexc":
+                if "Excluded Volume" in line:
+                    vexc = float(line.split()[-1])
+                    rgdmaxmwv.append(vexc)
+                    parameters.append(rgdmaxmwv)
+                    outCsv.append(file[:-4] + ', ' + str(round(vexc, 3)))
                     break
 
     return parameters, outCsv
