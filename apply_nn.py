@@ -21,14 +21,14 @@ import numpy as np
 import json
 import os
 import sys
+from normalisation.meanvariance import normalise
 from matplotlib import pyplot as plt
-
-# from normalisation.meanvariance import normalise
 
 smax3 = 1.0
 smax2 = 4.980390e-01
 smax1 = 1.960780e-01
 smin0 = 0.0196078
+multiplier = 1
 # check arguments
 mType = args.type
 if mType not in ['p', 'idp', 'na']:
@@ -63,7 +63,7 @@ try:
         print(f"Insufficient angular range!"
               f"smax = {smax} < {smax1} A^-1")
         sys.exit(0)
-    I = cur['I']
+    I = np.divide(cur['I'], cur['I'][0])
     Err = cur['Err']
 
 except Exception as e:
@@ -130,50 +130,36 @@ for sm in sModel:
     INew.append(np.mean(ITemp))
     er = np.sqrt(sum(np.square(ErrTemp))) / len(ErrTemp)
     ErrNew.append(er)
+# # DEBUG
+# plt.scatter(s, np.log10(I), c='blue', alpha=0.5, edgecolors='black')
+# plt.plot(sNew, np.log10(INew), c='red')
+# plt.show()
+# saxsdocument.write("SASDH39-regrid3.dat", {'s': sNew, 'I': INew, 'Err': ErrNew})
 
-plt.scatter(s, np.log10(I), c='blue', alpha=0.5, edgecolors='black')
-plt.plot(sNew, np.log10(INew), c='red')
+# resample n times and run nn to do prediction
+p = []
+for i in range(n):
+    Is = np.random.normal(INew, ErrNew)
+    try:
+        Is, __, __ = normalise(Is, stdIs, meanIs)
+    except:
+        pass
+
+    test = np.array([Is, ])
+    pred = loadedModel.predict(test)
+
+    for number in pred[0]:
+        p.append(round(multiplier * number, 3))
+print(f"{par} mean : {round(np.mean(p), 2)}\n"
+      f"{par} std  : {round(np.std(p), 2)}")
+
+n, bins, patches = plt.hist(p, edgecolor='black', bins=50, density=True, facecolor='g', alpha=0.75)
+plt.xlabel('Bins')
+plt.ylabel('Number')
+aver = round(np.mean(p), 2)
+minim = round(np.min(p), 2)
+maxim = round(np.max(p), 2)
+tt = f"{par}\nMean: {aver}\nMin: {minim}  Max: {maxim}"
+plt.title(tt)
+plt.grid(True)
 plt.show()
-saxsdocument.write("SASDH39-regrid3.dat", {'s': sNew, 'I': INew, 'Err': ErrNew})
-#     s = np.round(cur['s'], 3)
-#     firstSIndex = np.where(s == round(smin, 3))[0][0]
-#     lastSIndex = np.where(s == round(smax, 3))[0][0] + 1
-#
-#     if (lastSIndex - firstSIndex) != inputLength:
-#         print(f"{inputFilename} wrong grid, skipping.")
-#         continue
-#     Is = cur['I'][firstSIndex:lastSIndex]
-#
-# try:
-#     Is, __, __ = normalise(Is, stdIs, meanIs)
-# except:
-#     pass
-#
-#     test = np.array([Is, ])
-#         pred = loadedModel.predict(test)
-#
-#         # TODO: instead of checking output number of points > 10 read model type (scalar/pddf)
-#         if len(pred[0]) > 10:  # pddf or autoencoder model
-#             # Find Dmax: first negative (or zero) point after max(p(r))
-#             max_pddf = np.argmax(pred)
-#             negIndex = np.argmax(pred[:, max_pddf:] <= 0)
-#             # Crop p(r > Dmax), nullify last point
-#             pred = pred[:, 0: (negIndex + max_pddf + 1)]
-#             pred[:, -1] = 0.0
-#
-#             r = np.arange(0.0, len(pred[0]) * 0.25, 0.25)
-#             outCsv.append(inputFilename[:-4] + ', ' + str(round(r[-1], 3)))
-#             # print(f"{len(r)} - {len(pred[0])} - {r[-1]}") # DEBUG
-#             pddf_predicted = np.vstack((r, multiplier * pred[0]))
-#             np.savetxt(inputFilename[:-4], np.transpose(pddf_predicted), fmt="%.8e")
-#
-#         else:  # scalar model
-#             for number in pred[0]:
-#                 outCsv.append(f"{inputFilename[:-4]},  {round(multiplier * number, 3)}")
-#
-#     if outCsvPath != "":
-#         np.savetxt(f"{outCsvPath}-{f}.csv", outCsv, delimiter=",", fmt='%s')
-#         print(f"{outCsvPath}-{f}.csv is written.")
-#     else:
-#         print(f"Folder {f}:")
-#         print("\n".join(outCsv))
