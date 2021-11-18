@@ -9,6 +9,7 @@ parser.add_argument('type', type=str, help='p (protein), idp (intrinsically diso
                                            '(nucleic acid)')
 parser.add_argument('parameter', type=str, help='mw (molecular weight) or dmax (maximum intraparticle distance)')
 parser.add_argument('dataPath', metavar='path', type=str, help='path to the data file')
+parser.add_argument('I0', type=float, help='intensity in origin from AUTORG')
 parser.add_argument('--units', type=str, default='NANOMETER', help='angular units: ANGSTROM or NANOMETER')
 parser.add_argument('--n', default=1000, type=int, help='how many times to resample')
 # parser.add_argument('-o', '--output', type=str, default="", help='prefix to output CSV files')
@@ -22,7 +23,13 @@ import json
 import os
 import sys
 from normalisation.meanvariance import normalise
-from matplotlib import pyplot as plt
+import matplotlib
+
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from IPython.display import set_matplotlib_formats
+
+set_matplotlib_formats('svg')
 
 smax3 = 1.0
 smax2 = 4.980390e-01
@@ -41,7 +48,7 @@ if units not in ['ANGSTROM', 'NANOMETER']:
     parser.error("Wrong units! Please choose between ANGSTROM and NANOMETER.")
 n = args.n
 inputFilename = args.dataPath
-
+I0 = args.I0
 # read saxs data, find smin and smax
 try:
     cur, __ = saxsdocument.read(inputFilename)
@@ -63,7 +70,7 @@ try:
         print(f"Insufficient angular range!"
               f"smax = {smax} < {smax1} A^-1")
         sys.exit(0)
-    I = np.divide(cur['I'], cur['I'][0])
+    I = np.divide(cur['I'], I0)
     Err = cur['Err']
 
 except Exception as e:
@@ -153,13 +160,20 @@ for i in range(n):
 print(f"{par} mean : {round(np.mean(p), 2)}\n"
       f"{par} std  : {round(np.std(p), 2)}")
 
-n, bins, patches = plt.hist(p, edgecolor='black', bins=50, density=True, facecolor='g', alpha=0.75)
-plt.xlabel('Bins')
+# num, bins, patches = plt.hist(p, edgecolor='black', bins=50, density=True, facecolor='g', alpha=0.75)
+plt.hist(p, edgecolor='black', bins=50, density=False, facecolor='g', alpha=0.75)
+plt.xlabel(f"{par}")
 plt.ylabel('Number')
 aver = round(np.mean(p), 2)
 minim = round(np.min(p), 2)
 maxim = round(np.max(p), 2)
-tt = f"{par}\nMean: {aver}\nMin: {minim}  Max: {maxim}"
+if mType == 'p':
+    t = "Globular proteins"
+elif mType == 'idp':
+    t = "Intrinsically disordered proteins"
+elif mType == 'na':
+    t = "Nucleic acids"
+tt = f"{t}:  {par}\nMean: {aver}\nMin: {minim}  Max: {maxim}"
 plt.title(tt)
 plt.grid(True)
-plt.show()
+plt.savefig(f"{mType}-{par}-{n}.svg", bbox_inches='tight')
