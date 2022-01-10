@@ -63,7 +63,7 @@ logPath = args.logPath
 dataFiles = []
 valFiles = []
 
-# folders = ["abs"]  # , "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
+# folders = ["abs"]
 folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
 
 for f in folders:

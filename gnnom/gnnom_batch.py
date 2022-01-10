@@ -13,6 +13,9 @@
 """
 Script to apply NN for prediction.
 """
+# folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
+folders = ["dat-c16"]
+
 import argparse
 
 parser = argparse.ArgumentParser(description='Apply NN model in batch regime.')
@@ -67,7 +70,6 @@ try:
     loadedModel.load_weights(h5Filename)
     inputLength = loadedModel.input_shape[1]  # I(s) points
     print(f"Expected input: {inputLength} points.")
-    # outputLength = loadedModel.output_shape[1]  # p(r) points
     print("Model loaded. Yeah!")
 
 except KeyError as e:
@@ -78,13 +80,8 @@ except Exception as e:
     print(f"Error: {e}")
     quit()
 
-# Rg = 20.0 # Angstroms
-
-
 dataFiles = os.listdir(args.dataPath)
 dataFiles.sort()
-# folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
-folders = ["dat-c16"]
 
 for f in folders:
     outCsv = []
@@ -127,7 +124,8 @@ for f in folders:
 
         try:
             Is, __, __ = normalise(Is, stdIs, meanIs)
-        except:
+        except Exception as e:
+            print(f"Cannot normalise data: {e}")
             pass
         test = np.array([Is, ])
         pred = loadedModel.predict(test)
@@ -152,8 +150,8 @@ for f in folders:
                 outCsv.append(f"{inputFilename[:-4]},  {round(multiplier * number, 3)}")
 
     if outCsvPath != "":
-        np.savetxt(f"{outCsvPath}-{f}.csv", outCsv, delimiter=",", fmt='%s')
-        print(f"{outCsvPath}-{f}.csv is written.")
+        np.savetxt(f"{f}_{outCsvPath}", outCsv, delimiter=",", fmt='%s')
+        print(f"{f}_{outCsvPath} is written.")
     else:
         print(f"Folder {f}:")
         print("\n".join(outCsv))
