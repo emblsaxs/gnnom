@@ -1,0 +1,4 @@
+include README
+include LICENSE
+include requirements.txt
+recursive-include pytools/ *
