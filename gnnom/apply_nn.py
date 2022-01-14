@@ -21,7 +21,7 @@ parser.add_argument('type', type=str, help='p (protein), idp (intrinsically diso
                                            '(nucleic acid)')
 parser.add_argument('parameter', type=str, help='mw (molecular weight) or dmax (maximum intraparticle distance)')
 parser.add_argument('dataPath', metavar='path', type=str, help='path to the data file')
-parser.add_argument('I0', type=float, help='intensity in origin from AUTORG')
+parser.add_argument('I0', type=float, default=1.0, help='intensity in origin from AUTORG')
 parser.add_argument('--units', type=str, default='NANOMETER', help='angular units: ANGSTROM or NANOMETER')
 parser.add_argument('--n', default=10000, type=int, help='how many times to resample')
 # parser.add_argument('-o', '--output', type=str, default="", help='prefix to output CSV files')
@@ -174,41 +174,41 @@ for sm in sModel:
 # saxsdocument.write("SASDH39-regrid3.dat", {'s': sNew, 'I': INew, 'Err': ErrNew})
 
 # resample n times and run nn to do prediction
-p = []
+data = []
 for i in range(n):
     Is = np.random.normal(INew, ErrNew)
     # saxsdocument.write(f"{inputFilename}-resample.dat", {"s": sNew, "I": Is, 'Err': ErrNew})
     # exit()
     try:
         Is, __, __ = normalise(Is, stdIs, meanIs)
-    except:
+        data.append(Is)
+    except BaseException as e:
+        print(f"Cannot normalise the data: {e}")
         pass
 
-    test = np.array([Is, ])
-    pred = loadedModel.predict(test)
-
-    for number in pred[0]:
-        p.append(round(multiplier * number, 3))
-print(f"{par} mean : {round(np.mean(p), 2)}\n"
-      f"{par} std  : {round(np.std(p), 2)}")
+data = np.array(data)
+p = loadedModel.predict_on_batch(data)
+p = np.round(multiplier * p, 3)
 
 # num, bins, patches = plt.hist(p, edgecolor='black', bins=50, density=True, facecolor='g', alpha=0.75)
 plt.hist(p, edgecolor='black', bins=50, density=False, facecolor='g', alpha=0.75)
 plt.xlabel(f"{par}")
 plt.ylabel('Number')
-aver = round(np.mean(p), 2)
-std = round(np.std(p), 2)
-minim = round(np.min(p), 2)
-maxim = round(np.max(p), 2)
+aver = np.mean(p)
+std = np.std(p)
+minim = np.min(p)
+maxim = np.max(p)
+print(f"{par} mean : {aver:.2f}\n"
+      f"{par} std  : {std:.2f}")
 if mType == 'p':
     t = "Globular proteins"
 elif mType == 'idp':
     t = "Intrinsically disordered proteins"
 elif mType == 'na':
     t = "Nucleic acids"
-tt = f"{t}:  {par}\nAverage:  {aver}  Std:  {std}\nMin: {minim}  Max: {maxim}"
+tt = f"{t}:  {par}\nAverage:  {aver:.2f}  Std:  {std:.2f}\nMin: {minim:.2f}  Max: {maxim:.2f}"
 plt.title(tt)
 plt.grid(True)
 plt.savefig(f"{mType}-{par}-{n}.svg", bbox_inches='tight')
 end = time.time()
-print(end - start)
+print(f"{(end - start):.2f} seconds")

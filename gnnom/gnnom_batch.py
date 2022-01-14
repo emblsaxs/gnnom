@@ -13,8 +13,8 @@
 """
 Script to apply NN for prediction.
 """
-# folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
-folders = ["dat-c16"]
+folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
+# folders = ["dat-c16"]
 import argparse
 
 parser = argparse.ArgumentParser(description='Apply NN model in batch regime.')
