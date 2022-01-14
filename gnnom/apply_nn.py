@@ -21,7 +21,8 @@ parser.add_argument('type', type=str, help='p (protein), idp (intrinsically diso
                                            '(nucleic acid)')
 parser.add_argument('parameter', type=str, help='mw (molecular weight) or dmax (maximum intraparticle distance)')
 parser.add_argument('dataPath', metavar='path', type=str, help='path to the data file')
-parser.add_argument('I0', type=float, default=1.0, help='intensity in origin from AUTORG')
+parser.add_argument('I0', type=float, help='intensity in origin from AUTORG')
+parser.add_argument('Rg', type=float, help='radius of gyration from AUTORG')
 parser.add_argument('--units', type=str, default='NANOMETER', help='angular units: ANGSTROM or NANOMETER')
 parser.add_argument('--n', default=10000, type=int, help='how many times to resample')
 # parser.add_argument('-o', '--output', type=str, default="", help='prefix to output CSV files')
@@ -57,13 +58,13 @@ if mType not in ['p', 'idp', 'na']:
 par = args.parameter
 if par not in ['mw', 'dmax']:
     parser.error("Wrong Parameter! Please choose between mw and dmax.")
-units = args.units
+units = args.units.upper()
 if units not in ['ANGSTROM', 'NANOMETER']:
     parser.error("Wrong units! Please choose between ANGSTROM and NANOMETER.")
 n = args.n
 inputFilename = args.dataPath
 I0 = args.I0
-
+Rg = args.Rg
 
 def normalise(Is, divisor=None, subtractor=None):
     """Normalise data as x - <x> / Var(x)"""
@@ -83,7 +84,9 @@ def normalise(Is, divisor=None, subtractor=None):
 try:
     cur, __ = saxsdocument.read(inputFilename)
     s = cur['s']
-    if units == "NANOMETER": s = [ss / 10.0 for ss in s]  # change to angstroms
+    if units == "NANOMETER":
+        s = [ss / 10.0 for ss in s]  # change to angstroms
+        Rg = Rg / 10.0
     smin = s[0]
     smax = s[-1]
     if smin > smin0:
@@ -116,6 +119,7 @@ try:
     jsonFile = open(jsonFilename, 'r')
     loadedModelJson = jsonFile.read()
     json_data = json.loads(loadedModelJson)
+    mw_kda = 1.0
     # Optional fields in json
     if 'Normalization coefficient' in json_data:
         multiplier = float(json_data['Normalization coefficient'])
@@ -126,6 +130,7 @@ try:
         print(f"WARNING! "
               f"{jsonFilename} does not contain normalization coefficients!"
               f"Proceeding without normalization...")
+        mw_kda = 0.001
     # Compulsory fields in json
     smin = (float)(json_data['smin'])
     smax = (float)(json_data['smax'])
@@ -183,12 +188,15 @@ for i in range(n):
         Is, __, __ = normalise(Is, stdIs, meanIs)
         data.append(Is)
     except BaseException as e:
-        print(f"Cannot normalise the data: {e}")
+        # print(f"Cannot normalise the data: {e}")
+        data.append(Is)
         pass
 
 data = np.array(data)
 p = loadedModel.predict_on_batch(data)
-p = np.round(multiplier * p, 3)
+p = np.round(multiplier * p, 3) * mw_kda
+if par == 'mw': p = p[p > 0]
+if par == 'dmax': p = p[p > 2 * Rg]
 
 # num, bins, patches = plt.hist(p, edgecolor='black', bins=50, density=True, facecolor='g', alpha=0.75)
 plt.hist(p, edgecolor='black', bins=50, density=False, facecolor='g', alpha=0.75)
@@ -211,4 +219,4 @@ plt.title(tt)
 plt.grid(True)
 plt.savefig(f"{mType}-{par}-{n}.svg", bbox_inches='tight')
 end = time.time()
-print(f"{(end - start):.2f} seconds")
+print(f"{(end - start):.2f}")
