@@ -15,7 +15,6 @@ Script to apply NN for prediction.
 """
 # folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
 folders = ["dat-c16"]
-
 import argparse
 
 parser = argparse.ArgumentParser(description='Apply NN model in batch regime.')
@@ -31,10 +30,10 @@ from mysaxsdocument import saxsdocument
 import numpy as np
 import os
 import json
-from normalisation.logarithm import normalise  # , unnormalise
+from normalisation.meanvariance import normalise
+import time
 
-# from normalisation.meanvariance import normalise
-
+time_begin = time.time()
 
 jsonFilename = args.architecture
 h5Filename = args.weights
@@ -70,7 +69,9 @@ try:
     loadedModel.load_weights(h5Filename)
     inputLength = loadedModel.input_shape[1]  # I(s) points
     print(f"Expected input: {inputLength} points.")
+    # outputLength = loadedModel.output_shape[1]  # p(r) points
     print("Model loaded. Yeah!")
+    print(f"Time passed: {time.time() - time_begin}")
 
 except KeyError as e:
     print(f"Error: Oops, model cannot be loaded! Missing value: {e}")
@@ -80,10 +81,13 @@ except Exception as e:
     print(f"Error: {e}")
     quit()
 
+
 dataFiles = os.listdir(args.dataPath)
 dataFiles.sort()
 
 for f in folders:
+    inputIs = []
+    inputBasenames = []
     outCsv = []
     print(f"Processing folder: {f}")
     t = os.path.join(args.dataPath, f)
@@ -124,34 +128,23 @@ for f in folders:
 
         try:
             Is, __, __ = normalise(Is, stdIs, meanIs)
-        except Exception as e:
-            print(f"Cannot normalise data: {e}")
+            inputIs.append(Is)
+            inputBasenames.append(inputFilename[:-4])
+        except:
             pass
-        test = np.array([Is, ])
-        pred = loadedModel.predict(test)
 
-        # TODO: instead of checking output number of points > 10 read model type (scalar/pddf)
-        if len(pred[0]) > 10:  # pddf or autoencoder model
-            # Find Dmax: first negative (or zero) point after max(p(r))
-            max_pddf = np.argmax(pred)
-            negIndex = np.argmax(pred[:, max_pddf:] <= 0)
-            # Crop p(r > Dmax), nullify last point
-            pred = pred[:, 0: (negIndex + max_pddf + 1)]
-            pred[:, -1] = 0.0
-
-            r = np.arange(0.0, len(pred[0]) * 0.25, 0.25)
-            outCsv.append(inputFilename[:-4] + ', ' + str(round(r[-1], 3)))
-            # print(f"{len(r)} - {len(pred[0])} - {r[-1]}") # DEBUG
-            pddf_predicted = np.vstack((r, multiplier * pred[0]))
-            np.savetxt(inputFilename[:-4], np.transpose(pddf_predicted), fmt="%.8e")
-
-        else:  # scalar model
-            for number in pred[0]:
-                outCsv.append(f"{inputFilename[:-4]},  {round(multiplier * number, 3)}")
+    test = np.array(inputIs)
+    time_start = time.time()
+    pred = loadedModel.predict_on_batch(test)
+    pred = pred.flatten()
+    print(f"{time.time() - time_start} - apply model")
+    outCsv = np.transpose([inputBasenames, np.round(multiplier * pred, 3)])
 
     if outCsvPath != "":
-        np.savetxt(f"{f}_{outCsvPath}", outCsv, delimiter=",", fmt='%s')
-        print(f"{f}_{outCsvPath} is written.")
+        np.savetxt(f"{outCsvPath}-{f}.csv", outCsv, delimiter=",", fmt='%s')
+        print(f"{outCsvPath}-{f}.csv is written.")
     else:
         print(f"Folder {f}:")
         print("\n".join(outCsv))
+
+print(f"All done. Time passed: {time.time() - time_begin}")
