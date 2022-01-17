@@ -1,3 +1,15 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Apply NN for prediction MW and Dmax.
 Data are first resampled to get estimation of uncertainties
@@ -20,7 +32,8 @@ import os
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from keras.models import model_from_json
-from mysaxsdocument import saxsdocument
+from gnnom.mysaxsdocument import saxsdocument
+from gnnom.normalisation.meanvariance import normalise
 import numpy as np
 import json
 import sys
@@ -53,20 +66,6 @@ n = args.n
 inputFilename = args.dataPath
 I0 = args.I0
 Rg = args.Rg
-
-
-def normalise(Is, divisor=None, subtractor=None):
-    """Normalise data as x - <x> / Var(x)"""
-    Is = np.array(Is)
-    if subtractor is None: subtractor = np.mean(Is, axis=0)
-    Is = Is - subtractor
-    if divisor is None: divisor = np.var(Is, axis=0)
-    Is = np.divide(Is, divisor)
-    where_are_NaNs = np.isnan(Is)
-    Is[where_are_NaNs] = 0.0
-    where_are_Infs = np.isinf(Is)
-    Is[where_are_Infs] = 0.0
-    return Is, divisor, subtractor
 
 
 # read saxs data, find smin and smax
@@ -193,9 +192,9 @@ elif par == 'dmax':
 # print(f"TOTAL TIME: {end - start}")
 # num, bins, patches = plt.hist(p, edgecolor='black', bins=50, density=True, facecolor='g', alpha=0.75)
 plt.hist(p, edgecolor='black', bins=50, density=False, facecolor='g', alpha=0.75)
-if (par == 'mw'):
+if par == 'mw':
     xaxis = "Molecular weight, kDa"
-elif (par == "dmax"):
+elif par == "dmax":
     xaxis = "Maximum intra-particle distance, A"
 plt.xlabel(xaxis)
 plt.ylabel('Number')
