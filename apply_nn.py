@@ -1,3 +1,15 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Apply NN for prediction MW and Dmax.
 Data are first resampled to get estimation of uncertainties
@@ -10,7 +22,7 @@ parser.add_argument('type', type=str, help='p (protein), idp (intrinsically diso
 parser.add_argument('parameter', type=str, help='mw (molecular weight) or dmax (maximum intraparticle distance)')
 parser.add_argument('dataPath', metavar='path', type=str, help='path to the data file')
 parser.add_argument('I0', type=float, help='intensity in origin from AUTORG')
-parser.add_argument('Rg', type=float, help='radius of gyration from AUTORRG')
+parser.add_argument('Rg', type=float, help='radius of gyration from AUTORG')
 parser.add_argument('--units', type=str, default='nanometer', help='angular units: angstrom or nanometer')
 parser.add_argument('--n', default=1000, type=int, help='how many times to resample')
 # parser.add_argument('-o', '--output', type=str, default="", help='prefix to output CSV files')
@@ -21,6 +33,7 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from keras.models import model_from_json
 from gnnom.mysaxsdocument import saxsdocument
+from gnnom.normalisation.meanvariance import normalise
 import numpy as np
 import json
 import sys
@@ -31,9 +44,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from IPython.display import set_matplotlib_formats
 
-# import time
 set_matplotlib_formats('svg')
-# from scipy import stats
+#from scipy import stats
 
 smax3 = 1.0
 smax2 = 4.980390e-01
@@ -54,20 +66,6 @@ n = args.n
 inputFilename = args.dataPath
 I0 = args.I0
 Rg = args.Rg
-
-
-def normalise(Is, divisor=None, subtractor=None):
-    """Normalise data as x - <x> / Var(x)"""
-    Is = np.array(Is)
-    if subtractor is None: subtractor = np.mean(Is, axis=0)
-    Is = Is - subtractor
-    if divisor is None: divisor = np.var(Is, axis=0)
-    Is = np.divide(Is, divisor)
-    where_are_NaNs = np.isnan(Is)
-    Is[where_are_NaNs] = 0.0
-    where_are_Infs = np.isinf(Is)
-    Is[where_are_Infs] = 0.0
-    return Is, divisor, subtractor
 
 
 # read saxs data, find smin and smax
@@ -121,10 +119,10 @@ try:
         #      f"Proceeding without normalization...")
         mw_kda = 0.001
     # Compulsory fields in json
-    smin = float(json_data['smin'])
-    smax = float(json_data['smax'])
-    firstPointIndex = int(json_data['firstPointIndex'])
-    lastPointIndex = int(json_data['lastPointIndex'])
+    smin = (float)(json_data['smin'])
+    smax = (float)(json_data['smax'])
+    firstPointIndex = (int)(json_data['firstPointIndex'])
+    lastPointIndex = (int)(json_data['lastPointIndex'])
 
     jsonFile.close()
     loadedModel = model_from_json(loadedModelJson)
@@ -134,7 +132,7 @@ try:
     inputLength = loadedModel.input_shape[1]  # I(s) points
     # print(f"Expected input: {inputLength} points.")
     # outputLength = loadedModel.output_shape[1]  # p(r) points
-    # print("Model loaded. Yeah!")
+    #print("Model loaded. Yeah!")
 
 except KeyError as e:
     raise Exception(f"Error: Oops, model cannot be loaded! Missing value: {e}")
