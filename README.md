@@ -37,3 +37,6 @@ will print the help menu and exit.
 
 # Training/validation/test sets
 The original data sets generated from [PDB](https://www.rcsb.org/), [PED](https://proteinensemble.org/) and [NDB](http://ndbserver.rutgers.edu/) databases that were used for training NN and benchmarking it against other methods are available [here](https://oc.embl.de/index.php/s/fdisAFWzws0nkW9)
+
+# Web service
+If you don't want modify the code and want just to try it out on your data, this approach is also implemented as a [web service](https://dara.embl-hamburg.de/mwdmax.php). Please make sure that you select the proper macromolecule type and (in case you are using WAXS data) the angular units.
