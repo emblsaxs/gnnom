@@ -14,7 +14,7 @@ To apply the NN you need to use e.g. the following command
 ```bash
 python apply_nn.py p mw /path/to/my/datafile 1.0 2.8 --units=nanometer --n=10000
 ```
-Here **p** stands for type of particle (proteins); **mw** - what parameter to predict (mw or dmax); **1.0** and **2.8** are the I(0) and Rg, accordingly; **units** are the angular units (angstrom or nanometer) and **n** is the number of repetitions for resampling.
+Here **p** stands for type of particles (proteins); **mw** - what parameter to predict (mw or dmax); **1.0** and **2.8** are the I(0) and Rg, accordingly; **units** are the angular units (angstrom or nanometer) and **n** is the number of repetitions for resampling.
 The command 
 ```bash
 python apply_nn.py -h
@@ -36,4 +36,4 @@ python makemodel_scalar.py -h
 will print the help menu and exit.
 
 # Training/validation/test sets
-The original data sets generated from PDB that were used for training NN and benchmarking it against other methods are available [here](https://oc.embl.de/index.php/s/fdisAFWzws0nkW9)
+The original data sets generated from [PDB](https://www.rcsb.org/), [PED](https://proteinensemble.org/) and [NDB](http://ndbserver.rutgers.edu/) databases that were used for training NN and benchmarking it against other methods are available [here](https://oc.embl.de/index.php/s/fdisAFWzws0nkW9)
