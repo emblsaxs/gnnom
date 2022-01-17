@@ -3,7 +3,7 @@ Read and parse CRYSOL log files
 """
 import os
 
-from mysaxsdocument import saxsdocument
+from gnnom.mysaxsdocument import saxsdocument
 
 
 def parseCrysolLogs(logFiles, par):

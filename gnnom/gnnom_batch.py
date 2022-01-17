@@ -105,6 +105,7 @@ for f in folders:
                 print(f"{inputFilename} wrong grid, skipping.")
                 continue
             Is = cur['I'][firstSIndex:lastSIndex]
+            Err = cur['Err'][firstSIndex:lastSIndex]
 
         except Exception as e:
             print(f"Error: Could not read {inputFilename}:")
@@ -125,12 +126,14 @@ for f in folders:
         #        ss += step
         #    s  = np.hstack((s_head, s))
         #    Is = np.hstack((Is_head, Is))
-
+        # for i in range(100):
         try:
-            Is, __, __ = normalise(Is, stdIs, meanIs)
-            inputIs.append(Is)
-            inputBasenames.append(inputFilename[:-4])
+            # Iss = np.random.normal(Is, Err)
+            Iss, __, __ = normalise(Is, stdIs, meanIs)
+            inputIs.append(Iss)
+            inputBasenames.append(inputFilename[:-4])  #+str(i))
         except:
+            inputIs.append(Is)
             pass
 
     test = np.array(inputIs)

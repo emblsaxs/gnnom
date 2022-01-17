@@ -5,7 +5,8 @@ import os
 import random
 
 import numpy as np
-import saxsdocument
+
+from gnnom.mysaxsdocument import saxsdocument
 
 parser = argparse.ArgumentParser(description='Selects subset of the most distant data sets')
 parser.add_argument('dataPath', metavar='path', type=str, help='path to the folder with data')
@@ -29,8 +30,8 @@ def distance(point1, point2):
 
 
 def maxDistancePointAndList(point, list):
-    '''Finds the maximum distance between one (N-dimensional) point and an an array of
-    such points. Returns {point, distance}'''
+    """Finds the maximum distance between one (N-dimensional) point and an an array of
+    such points. Returns {point, distance}"""
     dist = 0
     for p in list:
         # FIXME: any metric may be used here

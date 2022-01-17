@@ -3,7 +3,8 @@ import argparse
 import os
 
 import numpy as np
-import saxsdocument
+
+from gnnom.mysaxsdocument import saxsdocument
 
 parser = argparse.ArgumentParser(
     description='Adds noise to the buffer and sample in .abs format. Example: python pytools\augment_with_buffer.py abs\ smoothed-water-final-x2_rebin.dat sec_0015_01220_stretched_rebinned_norm.dat -p tmp\ -ct 2 -a 0.00001 -b 0.0001 -c 0.00001')

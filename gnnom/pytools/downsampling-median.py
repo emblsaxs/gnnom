@@ -5,8 +5,8 @@ import random
 from collections import namedtuple
 
 import numpy as np
-# from psaxsdocument import pysaxsdocument as saxsdocument
-import psaxsdocument as saxsdocument
+
+from gnnom.mysaxsdocument import saxsdocument
 
 parser = argparse.ArgumentParser(description='Selects subset of the most distant data sets')
 parser.add_argument('dataPath', metavar='path', type=str, help='path to the folder with data')

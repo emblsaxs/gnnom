@@ -40,8 +40,8 @@ from keras.models import Sequential
 from keras.layers import Dense, Activation, BatchNormalization
 from keras.regularizers import l2
 # from normalisation.logarithm import normalise  # , unnormalise
-from normalisation.meanvariance import normalise
-from utils.crysollog import parseCrysolLogs, readDatsAndLogs, readLogs
+from gnnom.normalisation.meanvariance import normalise
+from gnnom.utils.crysollog import parseCrysolLogs, readDatsAndLogs, readLogs
 
 import matplotlib
 import pickle

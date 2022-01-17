@@ -4,7 +4,8 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
-import saxsdocument
+
+from gnnom.mysaxsdocument import saxsdocument
 
 pi = math.pi
 

@@ -10,7 +10,7 @@ args = parser.parse_args()
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from utils.crysollog import parseCrysolLogs
+from gnnom.utils.crysollog import parseCrysolLogs
 
 logs = []
 path = args.logPath

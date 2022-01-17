@@ -3,7 +3,8 @@ import argparse
 import os
 
 import numpy as np
-import saxsdocument
+
+from gnnom.mysaxsdocument import saxsdocument
 
 parser = argparse.ArgumentParser(
     description='Randomly scales SAXS *.dat files within the given standard deviation. Example: python pytools\augment.py  int-with-noise-norm-i0\ -p int-with-noise-x2-norm-i0\ -n 0.001 -b 0.001 -s 0.5')
