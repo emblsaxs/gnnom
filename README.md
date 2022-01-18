@@ -22,13 +22,14 @@ python apply_nn.py -h
 will print the help menu and exit.
 
 # How to train a new NN
-To train a NN you need the training, validation and test set. The simulated concentrations used for training are hard-coded into the _makemodel_scalar.py_ script as the "folders" variable. To run the script you can use e.g. the following command
+To train a NN you need the training, validation and test sets.  To run the script you can use e.g. the following command
 
 ```bash
 python makemodel_scalar.py /path/to/data /path/to/crysol/logfiles 500 mw 
 ```
-Here **/path/to/data** implies the structure similar to [this one](https://oc.embl.de/index.php/s/fdisAFWzws0nkW9). Then goes **/path/to/crysol/logfiles** - the path to the CRYSOL log files; **500** - number of epochs; and **mw** is the desired parameter. 
-It is also possible to re-use old weights if you want to train your model up (*.h5 file), or to use a pickle file to quickly re-read the input data.  
+Here **/path/to/data** implies the structure similar to [this one](https://oc.embl.de/index.php/s/fdisAFWzws0nkW9). The root directory should contain the subfolders with different simulated concentrations used for training and the list of these folders is hard-coded into the _makemodel_scalar.py_ script as the "folders" variable. If you are using your own training set, please change this variable in the code. 
+Then goes **/path/to/crysol/logfiles** - the path to the CRYSOL log files; **500** is the number of epochs for training; and **mw** is the desired parameter. 
+It is also possible to re-use old weights if you want to train your model up using previously generated *.h5 file. You can also use a pickle file to quickly re-read the input data.  
 The command 
 ```bash
 python makemodel_scalar.py -h
