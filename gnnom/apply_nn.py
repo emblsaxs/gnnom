@@ -15,6 +15,7 @@ Apply NN for prediction MW and Dmax.
 Data are first resampled to get estimation of uncertainties
 """
 import argparse
+import logging
 
 parser = argparse.ArgumentParser(description='Apply NN model.')
 parser.add_argument('type', type=str, help='p (protein), idp (intrinsically disordered protein) or na'
@@ -25,6 +26,7 @@ parser.add_argument('I0', type=float, help='intensity in origin from AUTORG')
 parser.add_argument('Rg', type=float, help='radius of gyration from AUTORRG')
 parser.add_argument('--units', type=str, default='nanometer', help='angular units: angstrom or nanometer')
 parser.add_argument('--n', default=1000, type=int, help='how many times to resample')
+parser.add_argument('--mode', default="WARNING", type=str, help='Logging level (default = WARNING), DEBUG, INFO')
 # parser.add_argument('-o', '--output', type=str, default="", help='prefix to output CSV files')
 
 args = parser.parse_args()
@@ -36,16 +38,18 @@ from gnnom.mysaxsdocument import saxsdocument
 from gnnom.normalisation.meanvariance import normalise
 import numpy as np
 import json
-import sys
+import time
 # from normalisation.meanvariance import normalise
 import matplotlib
-
+from utils.log import logger, log_warning, log_and_raise_error, log_execution_time, log_debug, log_info
+if args.mode == 'DEBUG':
+    logging.basicConfig(level=logging.DEBUG)
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from IPython.display import set_matplotlib_formats
-
+logging.getLogger('matplotlib.font_manager').disabled = True
 set_matplotlib_formats('svg')
-#from scipy import stats
+# from scipy import stats
 
 smax3 = 1.0
 smax2 = 4.980390e-01
@@ -67,7 +71,6 @@ inputFilename = args.dataPath
 I0 = args.I0
 Rg = args.Rg
 
-
 # read saxs data, find smin and smax
 try:
     cur, __ = saxsdocument.read(inputFilename)
@@ -78,8 +81,7 @@ try:
     smin = min(s)
     smax = max(s)
     if smin > smin0:
-        print(f"Error: Insufficient angular range! smin = {smin} > {smin0} A^-1")
-        sys.exit(0)
+        log_and_raise_error(logger, f"Insufficient angular range! smin = {smin} > {smin0} A^-1")
     if smax >= smax3:
         lastIndex = 256
     elif smax >= smax2:
@@ -87,19 +89,17 @@ try:
     elif smax >= smax1:
         lastIndex = 52
     else:
-        print(f"Insufficient angular range!"
-              f"smax = {smax} < {smax1} A^-1")
-        sys.exit(0)
+        log_and_raise_error(logger, f"Insufficient angular range! smax = {smax} < {smax1} A^-1")
     I = np.divide(cur['I'], I0)
     Err = np.divide(cur['Err'], I0)
 
 except Exception as e:
-    print(f"Error: Could not read {inputFilename}:")
+    log_warning(logger, f"Error: Could not read {inputFilename}:")
     raise Exception(e)
 
 # read appropriate model
 try:
-    modelPath = os.path.join("models", f"smax-index-{lastIndex}", f"{par}-3l-80u-{mType}",
+    modelPath = os.path.join(os.getcwd(), "gnnom/models", f"smax-index-{lastIndex}", f"{par}-3l-80u-{mType}",
                              f"gnnom-{par}-5-{lastIndex}-e100-u80")
     jsonFilename = modelPath + ".json"
     # load json and create model
@@ -114,9 +114,8 @@ try:
         meanIs = json_data['meanIs']
         stdIs = json_data['stdIs']
     elif 'meanIs' not in json_data:
-        # print(f"WARNING! "
-        #      f"{jsonFilename} does not contain normalization coefficients!"
-        #      f"Proceeding without normalization...")
+        log_warning(logger,f"{jsonFilename} does not contain normalization coefficients!"
+                    f"Proceeding without normalization...")
         mw_kda = 0.001
     # Compulsory fields in json
     smin = (float)(json_data['smin'])
@@ -130,9 +129,9 @@ try:
     h5Filename = modelPath + ".h5"
     loadedModel.load_weights(h5Filename)
     inputLength = loadedModel.input_shape[1]  # I(s) points
-    # print(f"Expected input: {inputLength} points.")
+    log_debug(logger, f"Expected input: {inputLength} points.")
     # outputLength = loadedModel.output_shape[1]  # p(r) points
-    #print("Model loaded. Yeah!")
+    log_info(logger, "Model loaded. Yeah!")
 
 except KeyError as e:
     raise Exception(f"Error: Oops, model cannot be loaded! Missing value: {e}")
@@ -164,9 +163,8 @@ for sm in sModel:
 # plt.plot(sNew, np.log10(INew), c='red')
 # plt.show()
 # saxsdocument.write("SASDH39-regrid3.dat", {'s': sNew, 'I': INew, 'Err': ErrNew})
-# start = time.time()
+start = time.monotonic()
 # resample n times and run nn to do prediiction
-p = []
 data = []
 for i in range(n):
     Is = np.random.normal(INew, ErrNew)
@@ -186,10 +184,9 @@ if par == 'mw':
     p = p[p > 0]
 elif par == 'dmax':
     p = p[p > 2 * Rg]
-# end = time.time()
-# print(f"{par} mean : {round(np.mean(p), 2)}\n"
-#      f"{par} std  : {round(np.std(p), 2)}")
-# print(f"TOTAL TIME: {end - start}")
+end = time.monotonic()
+
+log_debug(logger, f"TOTAL TIME: {end - start}")
 # num, bins, patches = plt.hist(p, edgecolor='black', bins=50, density=True, facecolor='g', alpha=0.75)
 plt.hist(p, edgecolor='black', bins=50, density=False, facecolor='g', alpha=0.75)
 if par == 'mw':
@@ -205,10 +202,10 @@ maxim = round(np.max(p), 1)
 median = round(np.median(p), 1)
 # interval95 = np.round(stats.t.interval(0.95, len(p) - 1, aver, std), 1)
 interval95 = np.round(np.percentile(p, [2.5, 97.5]), 1)
+log_info(logger, f"Parameter to predict: {par}")
+log_info(logger, f"Median  : {median}")
+log_info(logger, f"95% Interval  : [{interval95[0]} - {interval95[1]}]")
 # print to parse - 1 - mw or dmax 2 - median 3 - percentiles
-print(par)
-print(median)
-print(f"[{interval95[0]} - {interval95[1]}]")
 
 if mType == 'p':
     t = "Globular proteins"
@@ -224,4 +221,5 @@ tt = tt1 + tt2  # + tt3 + tt4
 plt.title(tt)
 plt.grid(True)
 folder = os.path.dirname(inputFilename)
-plt.savefig(f"{folder}/{mType}-{par}-{n}.svg", bbox_inches='tight')
+picturePath = os.path.join(folder, f"{mType}-{par}-{n}.svg")
+plt.savefig(picturePath, bbox_inches='tight')
