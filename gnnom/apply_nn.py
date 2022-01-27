@@ -16,6 +16,7 @@ Data are first resampled to get estimation of uncertainties
 """
 import argparse
 import logging
+logger = logging.getLogger(__name__)
 
 parser = argparse.ArgumentParser(description='Apply NN model.')
 parser.add_argument('type', type=str, help='p (protein), idp (intrinsically disordered protein) or na'
@@ -41,7 +42,7 @@ import json
 import time
 # from normalisation.meanvariance import normalise
 import matplotlib
-from utils.log import logger, log_warning, log_and_raise_error, log_execution_time, log_debug, log_info
+from utils.log import log_warning, log_and_raise_error, log_debug, log_info
 if args.mode == 'DEBUG':
     logging.basicConfig(level=logging.DEBUG)
 matplotlib.use('Agg')
