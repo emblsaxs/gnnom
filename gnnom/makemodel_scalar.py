@@ -27,6 +27,7 @@ parser.add_argument('--first', type=int, default=1, help='index of the first poi
 parser.add_argument('--last', type=int, default=None, help='index of the last point to use (default: use all)')
 parser.add_argument('--weightsPath', '-w', default=None, type=str, help='path to the h5 file')
 parser.add_argument('--picklePath', '-p', default=None, type=str, help='path to the pickle file, by default data.p')
+parser.add_argument('--mode', default="WARNING", type=str, help='Logging level (default = WARNING), DEBUG, INFO')
 
 args = parser.parse_args()
 
@@ -51,8 +52,14 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 # todo: tf.random.set_seed(5)
 import time
+import logging
+from utils.log import log_warning, log_and_raise_error, log_debug, log_info
+logger = logging.getLogger(__name__)
+if args.mode == 'DEBUG':
+    logging.basicConfig(level=logging.DEBUG)
+logging.getLogger('matplotlib.font_manager').disabled = True
 
-start = time.time()
+start = time.monotonic()
 
 num_epochs = args.epochs
 par = args.parameter
@@ -63,7 +70,6 @@ logPath = args.logPath
 dataFiles = []
 valFiles = []
 
-# folders = ["abs"]
 folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
 
 for f in folders:
@@ -80,9 +86,8 @@ t = os.path.join(dataPath, "test", f)
 testNames = os.listdir(t)
 
 if args.picklePath and (args.first != 1 or args.last):
-    # parser.error("If --picklePath is specified --first and --last will be ignored")
-    print("WARNING: If --picklePath is specified --first and --last will be ignored")
-print("Reading data files...")
+    log_warning(logger, "If --picklePath is specified --first and --last will be ignored")
+log_debug(logger, "Reading data files...")
 
 if not args.picklePath:
     # process --first and --last
@@ -105,17 +110,17 @@ if not args.picklePath:
     Is, logFiles = readDatsAndLogs(dataFiles, logPath, firstPointIndex, lastPointIndex)
     IsVal, logFilesVal = readDatsAndLogs(valFiles, logPath, firstPointIndex, lastPointIndex)
     logFilesTest = readLogs(testNames, logPath)
-    print("Parsing data log files...")
+    log_debug(logger, "Parsing data log files...")
     parameters, outCsv = parseCrysolLogs(logFiles, par)
-    print("...done.")
+    log_debug(logger, "...done.")
 
-    print("Parsing validation log files...")
+    log_debug(logger, "Parsing validation log files...")
     parametersVal, outCsvVal = parseCrysolLogs(logFilesVal, par)
-    print("...done.")
+    log_debug(logger, "...done.")
 
-    print("Parsing test log files...")
+    log_debug(logger, "Parsing test log files...")
     parametersTest, outCsvTest = parseCrysolLogs(logFilesTest, par)
-    print("...done.")
+    log_debug(logger, "...done.")
 
     # save to pickle
     pickle.dump([Is, logFiles, IsVal, logFilesVal, logFilesTest,
@@ -126,17 +131,17 @@ if not args.picklePath:
     # save test set ground truth values to csv
     outCsvPath = f"ground-{par}-{len(logFilesTest)}.csv"
     np.savetxt(outCsvPath, outCsvTest, delimiter=",", fmt='%s')
-    print(f"{outCsvPath} for test directory is written.")
+    log_info(logger, f"{outCsvPath} for test directory is written.")
 else:
     Is, logFiles, IsVal, logFilesVal, logFilesTest, \
     parameters, parametersVal, parametersTest, \
     firstPointIndex, lastPointIndex, smin, smax = pickle.load(open(args.picklePath, "rb"))
 
-print(f"Number of data files found: {len(dataFiles)}")
-print(f"Number of log  files found: {len(logFiles)}")
-print(f"Number of validation files found: {len(valFiles)}")
-print(f"Number of validation log  files found: {len(logFilesVal)}")
-print("...done.")
+log_debug(logger, f"Number of data files found: {len(dataFiles)}")
+log_debug(logger, f"Number of log  files found: {len(logFiles)}")
+log_debug(logger, f"Number of validation files found: {len(valFiles)}")
+log_debug(logger, f"Number of validation log  files found: {len(logFilesVal)}")
+log_debug(logger, "...done.")
 
 # Perceptron neural network
 # tensorboard = keras.callbacks.TensorBoard(log_dir='./Graph', histogram_freq=0, write_graph=True, write_images=True)
@@ -148,9 +153,10 @@ N = np.shape(Is)[1]
 output = np.shape(parameters)[1]
 
 # Normalize SAXS input (on for Dmax)
-dd = np.ones(np.shape(Is)[1])  # no division
-Is, stdIs, meanIs = normalise(Is, dd)
-IsVal, __, __ = normalise(IsVal, dd, meanIs)
+if par == 'dmax':
+    dd = np.ones(np.shape(Is)[1])  # no division
+    Is, stdIs, meanIs = normalise(Is, dd)
+    IsVal, __, __ = normalise(IsVal, dd, meanIs)
 
 # Normalize Rg, Dmax, MW
 multiplier = np.max(parameters)
@@ -169,7 +175,6 @@ model = Sequential()
 # model.add(Dense(args.units, input_dim=N, weights = [np.random.uniform(0,he,[args.units, N])]))
 # model.add(Dense(args.units, input_dim=N, use_bias=True, kernel_initializer='glorot_uniform'))
 
-
 model.add(
     Dense(args.units, input_dim=N, use_bias=False, kernel_initializer='glorot_uniform', kernel_regularizer=l2(0.0)))
 
@@ -186,7 +191,7 @@ model.add(Activation('tanh'))
 model.add(Dense(args.units, use_bias=False, kernel_initializer='glorot_uniform', kernel_regularizer=l2(0.0)))
 model.add(Activation('tanh'))
 # avrg = np.mean(parameters)
-# print(f"Mean {par}: {avrg}")
+# log_debug(logger, f"Mean {par}: {avrg}")
 # marginal improvement
 # w = [np.zeros([args.units, 1]), np.array([avrg])]
 # model.add(Dense(output, weights=w))
@@ -204,11 +209,9 @@ if args.weightsPath:
 
 # Check there are no Nans after normalisation
 if np.isnan(Is).any():
-    print("Error: Is matrix contains Nans!")
-    quit()
+    log_and_raise_error(logger, "Is matrix contains Nans!")
 if np.isnan(IsVal).any():
-    print("Error: IsVal matrix contains Nans")
-    quit()
+    log_and_raise_error(logger, "IsVal matrix contains Nans")
 
 train_history = model.fit(np.array(Is), np.array(parameters), epochs=num_epochs, batch_size=128,  # len(dataFiles),
                           validation_data=(np.array(IsVal), np.array(parametersVal)),
@@ -222,7 +225,8 @@ data = np.arange(N)
 
 # save a 2d plot of the weights of the first layer
 plt.imshow(model.get_weights()[1], cmap='coolwarm')
-plt.savefig('weights-' + model_name + '-1.png')
+plt.savefig(f"weights-{model_name}-1.png")
+log_info(logger, f"weights-{model_name}-1.png is saved.")
 plt.clf()
 
 # save a 2d plot of the weights of the second layer
@@ -234,10 +238,12 @@ plt.clf()
 step = (smax - smin) / (lastPointIndex - firstPointIndex - 1)
 s = np.arange(smin, smax + step, step)
 np.savetxt(f'weights-{model_name}-0.int', np.column_stack((s, model.get_weights()[0])), fmt="%.8e")
+log_info(logger, f'weights-{model_name}-0.int is saved.')
 # np.savetxt(f'weights-{model_name}-1.int', np.column_stack((s, np.transpose(model.get_weights()[1]) * model.get_weights()[0])), fmt="%.8e")
 
 # save the loss history
 np.savetxt(f'loss-{model_name}.int', np.transpose(np.vstack((np.arange(num_epochs), loss, val_loss))), fmt="%.8e")
+log_info(logger, f'loss-{model_name}.int is saved.')
 # model.summary()
 # scores = model.evaluate(np.array(IsVal), np.array(parametersVal), verbose=0)
 # print(f"Metrics: {model.metrics_names}")
@@ -254,7 +260,7 @@ try:
     model_json['meanIs'] = list(meanIs)
     model_json['stdIs'] = list(stdIs)
 except:
-    print("No normalization has been applied.")
+    log_warning(logger, "No normalization has been applied.")
 model_json['Normalization coefficient'] = multiplier
 # model_json['KratkyDegree']    = args.degree
 # compute elapsed time
