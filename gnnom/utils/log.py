@@ -29,7 +29,8 @@ def log(logger, message, lvl, exception=None, rollback=1):
             # Rolling back in the stack, otherwise it would be this function
             func = func.f_back
         code = func.f_code
-        msg = f"{message} => in {func.f_globals['__name__']} function {code.co_name} => {code.co_filename}: {code.co_firstlineno}"
+        msg = f"{message} => in {func.f_globals['__name__']} function {code.co_name} => {code.co_filename}," \
+              f" line: {code.co_firstlineno}"
 
     logcall(f"{lvl}: {msg}")
     if exception is not None:
