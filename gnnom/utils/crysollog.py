@@ -4,8 +4,11 @@ Read and parse CRYSOL log files
 import os
 
 from gnnom.mysaxsdocument import saxsdocument
+from gnnom.utils.log import log_execution_time
+import logging
+logger = logging.getLogger(__name__)
 
-
+@log_execution_time(logger)
 def parseCrysolLogs(logFiles, par):
     """
     Parse crysol log files for rg,mw,dmax or volume and returns the
@@ -63,7 +66,7 @@ def parseCrysolLogs(logFiles, par):
 
     return parameters, outCsv
 
-
+@log_execution_time(logger)
 def readDatsAndLogs(dataFiles, logPath, firstPointIndex, lastPointIndex):
     """
     Reads *.dat files, finds corresponding crysol log files, returns
@@ -84,7 +87,7 @@ def readDatsAndLogs(dataFiles, logPath, firstPointIndex, lastPointIndex):
         logFiles.append(l)
     return Is, logFiles
 
-
+@log_execution_time(logger)
 def readLogs(dataFiles, logPath):
     """
     Returns absolute path to *.log files as a list.
