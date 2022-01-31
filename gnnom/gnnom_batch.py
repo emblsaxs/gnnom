@@ -84,7 +84,7 @@ except Exception as e:
 
 
 @log_execution_time(logger)
-def apply_nn(dataPath):
+def apply_nn(dataPath, smin, smax):
     inputIs = []
     inputBasenames = []
     log_debug(logger, f"Processing folder: {f}")
@@ -140,7 +140,7 @@ def apply_nn(dataPath):
 
 
 for f in folders:
-    outCsv = apply_nn(args.dataPath)
+    outCsv = apply_nn(args.dataPath, smin, smax)
     if outCsvPath != "":
         np.savetxt(f"{outCsvPath}-{f}.csv", outCsv, delimiter=",", fmt='%s')
         log_info(logger, f"{outCsvPath}-{f}.csv is written.")
