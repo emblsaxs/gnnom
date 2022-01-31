@@ -11,7 +11,7 @@
 # limitations under the License.
 
 """
-Script to apply NN for prediction.
+Script to apply NN for prediction on multiple data folders.
 """
 folders = ["dat-c025", "dat-c05", "dat-c1", "dat-c2", "dat-c4", "dat-c8", "dat-c16"]
 # folders = ["dat-c16"]
@@ -21,7 +21,8 @@ parser = argparse.ArgumentParser(description='Apply NN model in batch regime.')
 parser.add_argument('architecture', metavar='json', type=str, help='path to the json file with architecture')
 parser.add_argument('weights', metavar='h5', type=str, help='path to the hdf5 file with weights')
 parser.add_argument('dataPath', metavar='path', type=str, help='path to the folder with data')
-parser.add_argument('-o', '--output', type=str, default="", help='prefix to output CSV files')
+parser.add_argument('-p', '--prefix', type=str, default="", help='prefix to output CSV files')
+parser.add_argument('--mode', default="WARNING", type=str, help='Logging level (default = WARNING), DEBUG, INFO')
 
 args = parser.parse_args()
 
@@ -31,15 +32,19 @@ import numpy as np
 import os
 import json
 from normalisation.meanvariance import normalise
-import time
+import logging
 
-time_begin = time.time()
+logger = logging.getLogger(__name__)
+from utils.log import log_warning, log_and_raise_error, log_debug, log_info, log_execution_time
+
+if args.mode == 'DEBUG':
+    logging.basicConfig(level=logging.DEBUG)
 
 jsonFilename = args.architecture
 h5Filename = args.weights
 inputFolder = args.dataPath
-outCsvPath = args.output
-multiplier = 1.0
+outCsvPath = args.prefix
+multiplier = 1
 
 try:
     # load json and create model
@@ -53,14 +58,13 @@ try:
         meanIs = json_data['meanIs']
         stdIs = json_data['stdIs']
     elif 'meanIs' not in json_data:
-        print(f"ACHTUNG! "
-              f"{jsonFilename} does not contain normalization coefficients!"
-              f"Proceeding without normalization...")
+        log_debug(logger, f"{jsonFilename} does not contain normalization coefficients!"
+                          f"Proceeding without normalization...")
     # Compulsory fields in json
-    smin = (float)(json_data['smin'])
-    smax = (float)(json_data['smax'])
-    firstPointIndex = (int)(json_data['firstPointIndex'])
-    lastPointIndex = (int)(json_data['lastPointIndex'])
+    smin = float(json_data['smin'])
+    smax = float(json_data['smax'])
+    firstPointIndex = int(json_data['firstPointIndex'])
+    lastPointIndex = int(json_data['lastPointIndex'])
     inputLength = lastPointIndex - firstPointIndex
 
     jsonFile.close()
@@ -68,48 +72,40 @@ try:
     # load weights into new model
     loadedModel.load_weights(h5Filename)
     inputLength = loadedModel.input_shape[1]  # I(s) points
-    print(f"Expected input: {inputLength} points.")
+    log_info(logger, f"Expected input: {inputLength} points.")
     # outputLength = loadedModel.output_shape[1]  # p(r) points
-    print("Model loaded. Yeah!")
-    print(f"Time passed: {time.time() - time_begin}")
+    log_info(logger, "Model loaded. Yeah!")
 
 except KeyError as e:
-    print(f"Error: Oops, model cannot be loaded! Missing value: {e}")
-    quit()
+    log_and_raise_error(logger, f"Error: Oops, model cannot be loaded! Missing value: {e}")
 
 except Exception as e:
-    print(f"Error: {e}")
-    quit()
+    log_and_raise_error(logger, f"Error: {e}")
 
 
-dataFiles = os.listdir(args.dataPath)
-dataFiles.sort()
-
-for f in folders:
+@log_execution_time(logger)
+def apply_nn(dataPath):
     inputIs = []
     inputBasenames = []
-    outCsv = []
-    print(f"Processing folder: {f}")
-    t = os.path.join(args.dataPath, f)
+    log_debug(logger, f"Processing folder: {f}")
+    t = os.path.join(dataPath, f)
     dataFiles = os.listdir(t)
     dataFiles.sort()
     for inputFilename in dataFiles:
         try:
             cur, __ = saxsdocument.read(os.path.join(t, inputFilename))
-
             s = np.round(cur['s'], 3)
             firstSIndex = np.where(s == round(smin, 3))[0][0]
             lastSIndex = np.where(s == round(smax, 3))[0][0] + 1
-
             if (lastSIndex - firstSIndex) != inputLength:
-                print(f"{inputFilename} wrong grid, skipping.")
+                log_warning(logger, f"{inputFilename} wrong grid, skipping.")
                 continue
             Is = cur['I'][firstSIndex:lastSIndex]
-            Err = cur['Err'][firstSIndex:lastSIndex]
+            # Err = cur['Err'][firstSIndex:lastSIndex]
 
         except Exception as e:
-            print(f"Error: Could not read {inputFilename}:")
-            print(e)
+            log_warning(logger, f"Error: Could not read {inputFilename}:")
+            log_warning(logger, e)
             continue
 
         # if s[0] != 0:
@@ -131,23 +127,25 @@ for f in folders:
             # Iss = np.random.normal(Is, Err)
             Iss, __, __ = normalise(Is, stdIs, meanIs)
             inputIs.append(Iss)
-            inputBasenames.append(inputFilename[:-4])  #+str(i))
+            inputBasenames.append(inputFilename[:-4])  # +str(i))
         except:
             inputIs.append(Is)
+            inputBasenames.append(inputFilename[:-4])
             pass
 
     test = np.array(inputIs)
-    time_start = time.time()
     pred = loadedModel.predict_on_batch(test)
     pred = pred.flatten()
-    print(f"{time.time() - time_start} - apply model")
-    outCsv = np.transpose([inputBasenames, np.round(multiplier * pred, 3)])
+    return np.transpose([inputBasenames, np.round(multiplier * pred, 3)])
 
+
+for f in folders:
+    outCsv = apply_nn(args.dataPath)
     if outCsvPath != "":
         np.savetxt(f"{outCsvPath}-{f}.csv", outCsv, delimiter=",", fmt='%s')
-        print(f"{outCsvPath}-{f}.csv is written.")
+        log_info(logger, f"{outCsvPath}-{f}.csv is written.")
+    # otherwise print to stdout
     else:
         print(f"Folder {f}:")
-        print("\n".join(outCsv))
-
-print(f"All done. Time passed: {time.time() - time_begin}")
+        for n, v in outCsv:
+            print(f"{n}, {v}")
