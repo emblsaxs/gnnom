@@ -7,6 +7,6 @@ setup(
     url='https://github.com/emblsaxs',
     license='MIR',
     author='Dima',
-    author_email='dmolodenskiy',
+    author_email='dmolodenskiy@embl-hamburg.de',
     description='Apply NNs for SAXS data analysis'
 )
