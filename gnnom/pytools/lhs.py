@@ -1,4 +1,8 @@
-#!/usr/bin/python
+"""
+This method appears to be the best to select a complete and diverse training set for a NN.
+It uses two parameters, e.g. MW and Dmax.
+The original idea was inspired by the latin hypercube method (LHS).
+"""
 import argparse
 
 parser = argparse.ArgumentParser(description='Uniformly selects distribution over two factors from a CSV file. '
