@@ -3,7 +3,6 @@ Fast comparison of prediction against the ground truth.
 Using CVS files and different metrics
 """
 import argparse
-import os.path
 
 parser = argparse.ArgumentParser(description='Compare NN predictions.')
 parser.add_argument('csv1', metavar='csv1', type=str, help='path to the template csv file')
@@ -19,6 +18,7 @@ parser.add_argument('-m', '--metric', type=str, default="l",
 
 args = parser.parse_args()
 
+import os.path
 import csv
 import numpy as np
 import matplotlib.pyplot as plt
@@ -135,5 +135,5 @@ if metric == "h":
 if outCsvPath != "":
     np.savetxt(outCsvPath, out, delimiter=",", fmt='%s')
     print(f"{outCsvPath} is written.")
-# else:
-#     print("\n".join(out))
+else:
+    print("\n".join(out))
