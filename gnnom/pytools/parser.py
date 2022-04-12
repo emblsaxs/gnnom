@@ -1,4 +1,7 @@
-#!/usr/bin/env
+"""
+A simple script to parse parameters from CRYSOL log files and show a heat map.
+Can be used to estimate how diverse is your training set.
+"""
 import argparse
 
 parser = argparse.ArgumentParser(description='Parse crysol log files and plot histo.')
