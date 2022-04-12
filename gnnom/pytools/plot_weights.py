@@ -1,3 +1,10 @@
+"""
+Extracts and plots the weights from a given layer of a NN.
+Useful to estimate how many weights are used, how many repetative weights are present and how noisy they are.
+To smooth the weights use the regularization parameter in the makemodel_scalar.py script.
+Save weights in *.int format to be compatible with primus Qt.
+"""
+
 import argparse
 
 parser = argparse.ArgumentParser(description='Plot NN weights.')
@@ -14,7 +21,7 @@ from keras.models import model_from_json
 
 h5Filename = args.weights
 jsonFilename = args.json
-# load json assuming the same base filename for json and h5 files
+# load json assuming the same base filename for json and h5 files!
 if jsonFilename is None: jsonFilename = os.path.splitext(h5Filename)[0] + ".json"
 l = args.layer
 
