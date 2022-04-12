@@ -1,6 +1,5 @@
 Sample description: Apoferritin_1_ball extrapolated to I(0)
 Sample: Apoferritin_1_b  c= 1 mg/ml  Code: extrapolated
-Parent(s): ../../../../../PycharmProjects/gnnom/pytools/template-sec_0015_01220-extrapolated.dat
   0.000000e+00   1.077257e+01   1.285915e-02
   3.921570e-03   7.659501e+00   7.479788e-03
   7.843140e-03   8.284504e-01   1.373184e-03
@@ -257,7 +256,4 @@ Parent(s): ../../../../../PycharmProjects/gnnom/pytools/template-sec_0015_01220-
   9.921570e-01   3.386579e-02   1.734067e-04
   9.960780e-01   3.389980e-02   1.991570e-04
   1.000000e+00   3.406834e-02   2.324135e-04
-working-directory: C:\Users\plmnnk\ownCloud\embl\SVD\BSA-4F5S\smooth-water-more-points
-parent: ../../../../../PycharmProjects/gnnom/pytools/template-sec_0015_01220-extrapolated.dat
-creator: datregrid
-creator-version: 12736 (r12736)
+
