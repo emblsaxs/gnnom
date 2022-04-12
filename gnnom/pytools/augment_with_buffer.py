@@ -1,13 +1,14 @@
-#!/usr/bin/python
+"""
+Adds noise to the buffer and sample in .abs format, subtracts sample from buffer.
+The most reliable method, but needs template SAXS data files.
+The examples from EMBL p12 beamline are provided in the 'templates' directory
+"""
 import argparse
-import os
-
-import numpy as np
-
-from gnnom.mysaxsdocument import saxsdocument
 
 parser = argparse.ArgumentParser(
-    description='Adds noise to the buffer and sample in .abs format. Example: python pytools\augment_with_buffer.py abs\ smoothed-water-final-x2_rebin.dat sec_0015_01220_stretched_rebinned_norm.dat -p tmp\ -ct 2 -a 0.00001 -b 0.0001 -c 0.00001')
+    description="Adds noise to the buffer and sample in .abs format."
+                r"Example: python augment_with_buffer.py abs\ smoothed-water-final-x2-extrapolated.dat"
+                r" template.dat -p tmp\ -ct 2 -a 0.00001 -b 0.0001 -c 0.00001")
 parser.add_argument('dataPath', type=str, help='path to the folder with sample data')
 parser.add_argument('-p', '--prefix', type=str, default="", help='add prefix to the rescaled files')
 parser.add_argument('-ct', '--concentration', type=float, default=1.0, help='concentration of the sample to simulate')
@@ -25,6 +26,10 @@ parser.add_argument('--normalize-by-I0', type=bool, nargs='?', default=False, co
                     help='Normalize by I(0) from the sample data')
 
 args = parser.parse_args()
+
+import os
+import numpy as np
+from gnnom.mysaxsdocument import saxsdocument
 
 inputFolder = args.dataPath
 prefix = args.prefix
@@ -48,13 +53,17 @@ teeth = np.abs(sI / (sErr ** 2))
 bcurve, __ = saxsdocument.read(bufferPath)
 # sBuf         = np.array(bcurve['s'])
 IsBuf = np.array(bcurve['I'])
+# DEBUG
 # errBuf       = np.sqrt(np.abs(IsBuf/teeth))
 # IsBufNoise   = np.random.normal(IsBuf, errBuf)
 # saxsdocument.write(f"{prefix}noise-{bufferPath}", {'s' : sBuf, 'I' : IsBufNoise, 'Err' : errBuf, 'Fit' : ''}, bprop)
 
 # apply to all simulated data files on absolute scale
 for inputFilename in os.listdir(inputFolder):
-
+    filename, file_extension = os.path.splitext(inputFilename)
+    if file_extension != '.abs': 
+        print(f"Skipping {inputFilename}")
+        continue
     dat, property = saxsdocument.read(os.path.join(inputFolder, inputFilename))
     property['sample-concentration'] = conc
     # create unsubtracted sample with noise
