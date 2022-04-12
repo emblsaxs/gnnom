@@ -1,4 +1,9 @@
-#!/usr/bin/python
+"""
+Selects subset of the most distant data sets from the median.
+Can be used to select the most representative training set for a NN.
+Legacy code.
+"""
+
 import argparse
 import os
 import random
