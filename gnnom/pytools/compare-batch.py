@@ -1,6 +1,6 @@
 """
-Fast comparison of prediction against the ground truth in batch mode.
-Using CVS files
+Fast comparison of prediction against the ground truth for multiple folders.
+Use CVS files of type 'dat-cXXX.csv' with ground truth values, where XXX stands for concentration.
 """
 import argparse
 
