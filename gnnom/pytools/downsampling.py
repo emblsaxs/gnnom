@@ -1,12 +1,9 @@
-#!/usr/bin/python
+"""
+Selects subset of the most distant data sets using any metric.
+Can be used to select the most representative training set for a NN.
+"""
+
 import argparse
-import itertools
-import os
-import random
-
-import numpy as np
-
-from gnnom.mysaxsdocument import saxsdocument
 
 parser = argparse.ArgumentParser(description='Selects subset of the most distant data sets')
 parser.add_argument('dataPath', metavar='path', type=str, help='path to the folder with data')
@@ -16,12 +13,19 @@ parser.add_argument('-p', '--prefix', type=str, default="", help='add prefix to 
 
 args = parser.parse_args()
 
+import itertools
+import os
+import random
+import numpy as np
+from gnnom.mysaxsdocument import saxsdocument
+
 
 def distance(point1, point2):
-    '''Find a distance using any kind of metric'''
+    """Find a distance using any kind of metric"""
     point1 = np.array(point1)
     point2 = np.array(point2)
-    d = 10 - np.dot(point1, point2)
+    d = 10 - np.dot(point1, point2)  # use dot product of vectors
+    # DEBUG
     # d = np.linalg.norm(point1 - point2)
     # d = 0 # do not convert list to numpy - no advantage in speed
     # for i in range(len(point1)):
@@ -62,6 +66,7 @@ print(f"Found: {len(inFiles)} Expected output: {numberPoints}")
 inMatrix = []
 inCurves = []
 
+# generate a giant matrix
 for inputFilename in inFiles:
     try:
         prop, curve = saxsdocument.read(os.path.join(inputFolder, inputFilename))
