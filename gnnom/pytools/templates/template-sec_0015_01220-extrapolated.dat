@@ -2643,5 +2643,4 @@ Sample: extrapolated  c= 1 mg/ml  Code: extrapolated
  1.006837e+000  3.341449e-002  1.668640e-003
  1.007218e+000  3.576330e-002  1.977715e-003
  1.007600e+000  3.674761e-002  2.224066e-003
-parent: sec_0015_01220.dat
-working-directory: C:\Users\plmnnk\ownCloud\embl\SVD\BSA-4F5S\smooth-water-more-points
+
