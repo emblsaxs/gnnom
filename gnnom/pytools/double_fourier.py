@@ -1,3 +1,8 @@
+"""
+Double Fourier transform to validate the predicted P(r) functions.
+Not applicable to scalar models (legacy code).
+"""
+
 import math
 import os
 import sys
