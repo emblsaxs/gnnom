@@ -1,111 +1,152 @@
 """
-Selects subset of the most distant data sets using any metric.
-Can be used to select the most representative training set for a NN.
+This method appears to be the best to select a complete and diverse training set for a NN.
+It uses two parameters, e.g. MW and Dmax.
+The original idea was inspired by the latin hypercube method (LHS).
 """
-
 import argparse
 
-parser = argparse.ArgumentParser(description='Selects subset of the most distant data sets')
-parser.add_argument('dataPath', metavar='path', type=str, help='path to the folder with data')
-parser.add_argument('percent', metavar='percent', type=str, help='percent of data to choose')
-parser.add_argument('outPath', metavar='out', type=str, help='path to the output folder')
-parser.add_argument('-p', '--prefix', type=str, default="", help='add prefix to the output files')
+parser = argparse.ArgumentParser(description='Uniformly selects distribution over two factors from a CSV file. '
+                                             'Note: the file must contain id column')
+parser.add_argument('csv', metavar='csv', type=str, help='path to the csv file')
+parser.add_argument('f1', metavar='f1', type=str, help='first factor to distribute over')
+parser.add_argument('f1Low', metavar='f1Low', type=float, help='low boundary for f1 factor')
+parser.add_argument('f1High', metavar='f1High', type=float, help='higher boundary for f1 factor')
+parser.add_argument('f2', metavar='f2', type=str, help='second factor to distribute over')
+parser.add_argument('f2Low', metavar='f2Low', type=float, help='low boundary for f2 factor')
+parser.add_argument('f2High', metavar='f2High', type=float, help='higher boundary for f2 factor')
+parser.add_argument('num1', metavar='num1', type=int, help='number of bins by f1')
+parser.add_argument('num2', metavar='num2', type=int, help='number of bins by f2')
+parser.add_argument('--type', metavar='type', type=str, default="p", help='p -only proteins / n - only DNA/RNA')
+
+parser.add_argument('--output', '-o', metavar='output', type=str, default="", help='save output in CSV format')
 
 args = parser.parse_args()
 
-import itertools
-import os
-import random
+import csv
 import numpy as np
-from gnnom.mysaxsdocument import saxsdocument
+import os
+import matplotlib.pyplot as plt
+import random
 
+# store to local variables
+inputCsv = args.csv
+f1 = args.f1
+f1Low = args.f1Low
+f1High = args.f1High
+f2 = args.f2
+f2Low = args.f2Low
+f2High = args.f2High
+binsNum1 = args.num1
+binsNum2 = args.num2
+typeP = args.type
 
-def distance(point1, point2):
-    """Find a distance using any kind of metric"""
-    point1 = np.array(point1)
-    point2 = np.array(point2)
-    d = 10 - np.dot(point1, point2)  # use dot product of vectors
-    # DEBUG
-    # d = np.linalg.norm(point1 - point2)
-    # d = 0 # do not convert list to numpy - no advantage in speed
-    # for i in range(len(point1)):
-    #    d += pow((point1[i]-point2[i]),2)
-    return d
+outputCsv = args.output
+# by default takes only proteins!
+if typeP == "n":
+    v = 0
+else:
+    v = 1
 
+if os.path.exists(inputCsv):
+    with open(inputCsv) as csvFile:
+        csvReader = csv.DictReader(csvFile, delimiter=',')
+        if f1 not in (csvReader.fieldnames):
+            print(f"No such parameter {f1}!")
+            exit()
+        if f2 not in (csvReader.fieldnames):
+            print(f"No such parameter {f2}!")
+            exit()
 
-def maxDistancePointAndList(point, list):
-    """Finds the maximum distance between one (N-dimensional) point and an an array of
-    such points. Returns {point, distance}"""
-    dist = 0
-    for p in list:
-        # FIXME: any metric may be used here
-        d = distance(point, p)
-        if d > dist:
-            dist = d
-            distP = p
-    return {"Point": distP, "Distance": dist}
+        # to speed up the calculations let's make up a shorter array of dicts
+        shortArr = []
+        for row in csvReader:
+            f1Float = float(row[f1])
+            f2Float = float(row[f2])
+            if f1Float >= f1Low and f1Float <= f1High and int(row["is_protein"]) == v:
+                if f2Float >= f2Low and f2Float <= f2High:
+                    shortArr.append({"id": row["id"], f1: f1Float, f2: f2Float})
+else:
+    print("No such file! ")
+    exit()
 
+# Do we need it?
+f1Arr = [d[f1] for d in shortArr]
+f2Arr = [d[f2] for d in shortArr]
+f1Arr.sort()
+f2Arr.sort()
 
-def distancePointAndList(point, list):
-    dist = 0
-    for p in list:
-        dist += distance(p, point)
-    return dist
+finalList = []
 
+# compute histograms
+hist1, bins1 = np.histogram(f1Arr, bins=binsNum1)
 
-inputFolder = args.dataPath
-prefix = args.prefix
-percent = float(args.percent) / 100.0
-outputFolder = args.outPath
+# pairs of left-right boundaries for each bin
+pairs1 = zip(bins1, bins1[1:])
+for bin in pairs1:
+    # array of proteins within that bin - clear for each bin
+    proteinsFromBin = []
+    # take binsNum from each bin -> total number will be binsNum**2 (WHY NOT??)
+    for protein in shortArr:
+        if (protein[f1] >= bin[0]) and (protein[f1] < bin[1]):
+            proteinsFromBin.append(protein)
 
-inFiles = os.listdir(inputFolder)
-# find the number of curves to create:
-numberPoints = (int)(len(inFiles) * percent)
-print(f"Found: {len(inFiles)} Expected output: {numberPoints}")
-# create a matrix of the second columns
-inMatrix = []
-inCurves = []
+    print(f"{f1}:{round(bin[0], 2)}-{round(bin[1], 2)} bin has {len(proteinsFromBin)} entries")
+    # reshuffle proteins from the bin!
+    random.shuffle(proteinsFromBin)
+    # for all proteins within the bin build histogram and take numFromBin entries from each bin of the new distribution
+    hist2, bins2 = np.histogram([d[f2] for d in proteinsFromBin], bins=binsNum2)
+    pairs2 = zip(bins2, bins2[1:])
 
-# generate a giant matrix
-for inputFilename in inFiles:
-    try:
-        prop, curve = saxsdocument.read(os.path.join(inputFolder, inputFilename))
-        r = curve['s']
-        p = curve['I']
-        inMatrix.append(p[::4])
-        inCurves.append({"filename": inputFilename, "properties": prop, "data": p})
-    except Exception as e:
-        print(e)
+    for bin2 in pairs2:
+        for protein2 in proteinsFromBin:
+            if (protein2[f2] >= bin2[0]) and (protein2[f2] < bin2[1]):
+                finalList.append(protein2)
+                break
+                # DEBUG
+                # print(f"bin1: {i}        bin2: {j}")
 
-# remove duplicates from inMatrix
-length = len(inMatrix)
-inMatrix.sort()
-inMatrix = list(k for k, _ in itertools.groupby(inMatrix))
-if (length - len(inMatrix) > 0): print(f"{length - len(inMatrix)} duplicates removed.")
+# cdf = hist1.cumsum()
+# cdf_normalized = cdf * hist1.max()/ cdf.max()
+# plt.plot(cdf_normalized, color = 'b')
 
-# pick a random curve to be the first point
-firstCurve = random.choice(inMatrix)
-inMatrix.remove(firstCurve)
-outMatrix = []
-outMatrix.append(firstCurve)
-for point in range(numberPoints - 1):
-    print(f"{point} out of {numberPoints - 1}...")
-    # find the most distance point in respect to the found ones
-    dist = 0
-    for p in inMatrix:
-        d = distancePointAndList(p, outMatrix)
-        if dist < d:
-            dist = d
-            pp = p
-    inMatrix.remove(pp)
-    outMatrix.append(pp)
-    # save files
-    r = np.arange(101)
-    curve = [i for i in inCurves if (i["data"][::4] == pp)][0]
-    name = curve["filename"]
-    prop = curve["properties"]
-    pddf = curve["data"]
-    path = os.path.join(outputFolder, prefix, name)
-    saxsdocument.write(f"{prefix}{path}", {'s': r, 'I': pddf, 'Err': '', 'Fit': ''}, prop)
+# write output csv if exists
+if outputCsv != "":
+    with open(outputCsv, mode='w') as outfile:
+        writer = csv.writer(outfile, delimiter=',', quoting=csv.QUOTE_NONE)
+        writer.writerow(['id'] + [f1] + [f2])
+        for protein in finalList:
+            # s = f"{protein['id']}, {protein[f1]}, {protein[f2]}"
+            writer.writerow([protein['id']] + [protein[f1]] + [protein[f2]])
 
-    print(f"{name} is saved")
+    print(f"{len(finalList)} files is written to {outputCsv}")
+else:
+    print(f"id,{f1},{f2}")
+    for protein in finalList:
+        print(f"{protein['id']},{protein[f1]},{protein[f2]}")
+
+# Do we need it?
+f3Arr = [d[f1] for d in finalList]
+f4Arr = [d[f2] for d in finalList]
+
+f3Arr.sort()
+f4Arr.sort()
+
+# plot histograms
+fig, ax = plt.subplots(2, 2, tight_layout=True)
+ax[0, 0].hist(f1Arr, edgecolor='black', bins=binsNum1, facecolor='b', alpha=0.5)
+ax[0, 0].set_xticks(np.linspace(min(f1Arr), max(f1Arr), binsNum1 + 1))
+ax[0, 0].legend([f"{f1} all"], loc="upper right")
+
+ax[1, 0].hist(f2Arr, edgecolor='black', bins=binsNum2, facecolor='g', alpha=0.5)
+ax[1, 0].set_xticks(np.linspace(min(f2Arr), max(f2Arr), binsNum2 + 1))
+ax[1, 0].legend([f"{f2} all"], loc="upper right")
+
+ax[0, 1].hist(f3Arr, edgecolor='black', bins=binsNum1, facecolor='b', alpha=0.5)
+ax[0, 1].set_xticks(np.linspace(min(f3Arr), max(f3Arr), binsNum1 + 1))
+ax[0, 1].legend([f"{f1} selected"], loc="upper right")
+
+ax[1, 1].hist(f4Arr, edgecolor='black', bins=binsNum2, facecolor='g', alpha=0.5)
+ax[1, 1].set_xticks(np.linspace(min(f4Arr), max(f4Arr), binsNum2 + 1))
+ax[1, 1].legend([f"{f2} selected"], loc="upper right")
+
+plt.show()
