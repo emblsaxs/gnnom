@@ -8,6 +8,8 @@ monodisperse solutions of folded proteins, intrinsically disordered proteins, an
 synthetic SAXS data generated in various angular ranges with varying levels of noise demonstrated a higher accuracy and
 better robustness of the NN approach compared to the existing methods. 
 
+![alt text](https://github.com/emblsaxs/gnnom/blob/master/header.jpg?raw=true)
+
 # How to cite
 If you use gnnom for your research please cite:
 D.Molodenskiy, D.Svergun, A.Kikhney (2022) Artificial neural networks for solution scattering data analysis, Structure 
