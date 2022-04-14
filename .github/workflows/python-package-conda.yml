@@ -33,7 +33,9 @@ jobs:
         conda install pytest
         python setup.py sdist
         tar -xvf dist/gnnom-1.0.tar.gz
-        cd gnnom-1.0
+        ls -la
+        mkdir gnnom
+        scp -r gnnom-1.0/gnnom/mysaxsdocument gnnom/mysaxsdocument
         pytest
     - name: Test run
       run: |
