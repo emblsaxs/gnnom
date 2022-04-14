@@ -22,6 +22,6 @@ setup(name='saxsdocument',
       author_email='dmolodenskiy@embl-hamburg.de',
       license='MIT',
       packages=find_packages(),
-      install_requires=[numpy],
+      install_requires=[],
       include_package_data=True,
       zip_safe=False)
