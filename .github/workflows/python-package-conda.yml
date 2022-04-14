@@ -31,6 +31,9 @@ jobs:
     - name: Test with pytest
       run: |
         conda install pytest
+        python setup.py sdist
+        tar -xvf dist/gnnom-1.0.tar.gz
+        cd gnnom-1.0
         pytest
     - name: Test run
       run: |
