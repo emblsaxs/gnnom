@@ -9,7 +9,7 @@ class document:
         # 0 - s, 1 - I, 2 - Err, 3 - Fit
         self.curve = [[] for i in range(4)]
 
-    def set(curve, prop={}):
+    def set(self, curve, prop={}):
         self.property = prop
         self.curve = curve
 
