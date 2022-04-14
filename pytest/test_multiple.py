@@ -1,7 +1,5 @@
 import pytest
-import sys
-sys.path.append("..")
-from gnnom.mysaxsdocument import saxsdocument
+from ..gnnom.mysaxsdocument import saxsdocument
 import filecmp
 
 @pytest.mark.one
