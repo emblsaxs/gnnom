@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 def readme():
@@ -6,9 +6,9 @@ def readme():
         return f.read()
 
 
-setup(name='saxsdocumnet',
-      version='0.0.1',
-      description='Library for dealing with SAXS related files',
+setup(name='saxsdocument',
+      version='1.1',
+      description='Library for readin/writing SAXS related files',
       long_description=readme(),
       long_description_content_type='text/markdown',
       classifiers=[
@@ -18,11 +18,10 @@ setup(name='saxsdocumnet',
           'Operating System :: OS Independent'
       ],
       url='https://github.com/DimaMolod/saxsdocument',
-      author='DimaMolodenskiy',
+      author='Dima',
       author_email='dmolodenskiy@embl-hamburg.de',
-      keywords='core package',
       license='MIT',
-      packages=['saxsdocument'],
-      install_requires=[],
+      packages=find_packages(),
+      install_requires=[numpy],
       include_package_data=True,
       zip_safe=False)
