@@ -1,5 +1,5 @@
 import pytest
-from ..gnnom.mysaxsdocument import saxsdocument
+from gnnom.mysaxsdocument import saxsdocument
 import filecmp
 
 @pytest.mark.one
