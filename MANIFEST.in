@@ -1,6 +1,6 @@
 include README
 include LICENSE
 include requirements.txt
-recursive-include pytools/ *
+recursive-include gnnom/pytools/ *
 recursive-include testdata/ *
-recursive-include models/ *
+recursive-include gnnom/models/ *
