@@ -3,11 +3,16 @@ name: Python Package using Conda
 on: [push]
 
 jobs:
-  build:
-    runs-on: ${{matrix.os}}
+  build-linux:
+    runs-on: ubuntu-latest
     strategy:
-      matrix:
-       os: [ubuntu-latest, windows-latest]#, macOS-latest]
+      max-parallel: 5
+#TODO:jobs:
+#  build:
+#    runs-on: ${{matrix.os}}
+#    strategy:
+#      matrix:
+#       os: [ubuntu-latest, windows-latest]#, macOS-latest]
 
     steps:
     - uses: actions/checkout@v3
