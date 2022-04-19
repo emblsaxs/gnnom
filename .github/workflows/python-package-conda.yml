@@ -3,10 +3,11 @@ name: Python Package using Conda
 on: [push]
 
 jobs:
-  build-linux:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ${{matrix.os}}
     strategy:
-      max-parallel: 5
+      matrix:
+       os: [ubuntu-latest, windows-latest, macOS-latest]
 
     steps:
     - uses: actions/checkout@v3
@@ -52,6 +53,5 @@ jobs:
       with:
         name: svg-histo-artifact
         path: 
-             testdata/p-*-100?.svg
-             find . -name *.svg
+             testdata/*.svg
         retention-days: 5
