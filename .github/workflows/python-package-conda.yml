@@ -52,6 +52,6 @@ jobs:
       with:
         name: svg-histo-artifact
         path: 
-             gnnom-1.0/p-*-100?.svg
+             testdata/p-*-100?.svg
              find . -name *.svg
         retention-days: 5
