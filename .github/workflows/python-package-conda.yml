@@ -61,10 +61,11 @@ jobs:
         path: 
              gnnom-1.0/testdata/p-*.svg
         retention-days: 5
-    - name: 'Build and push to Docker hub'
-      uses: mr-smithers-excellent/docker-build-push@v5
-      with:
-        image: dmolodenskiy/gnnom
-        registry: docker.io
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+    #TODO: add or generate a Dockerfile
+    #- name: 'Build and push to Docker hub'
+    #  uses: mr-smithers-excellent/docker-build-push@v5
+    #  with:
+    #    image: dmolodenskiy/gnnom
+    #    registry: docker.io
+    #    username: ${{ secrets.DOCKER_USERNAME }}
+    #    password: ${{ secrets.DOCKER_PASSWORD }}
