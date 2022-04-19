@@ -58,5 +58,5 @@ jobs:
       with:
         name: svg-histo-artifact
         path: 
-             testdata/*.svg
+             find . -name *.svg
         retention-days: 5
