@@ -66,5 +66,6 @@ jobs:
       with:
         image: dmolodenskiy/gnnom
         registry: docker.io
+        dockerfile: docker/Dockerfile
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
