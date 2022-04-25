@@ -1,6 +1,6 @@
-include README
+include README.md
 include LICENSE
-include requirements.txt
+include env.yml
 recursive-include gnnom/pytools/ *
 recursive-include testdata/ *
 recursive-include gnnom/models/ *
