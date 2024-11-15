@@ -14,6 +14,7 @@
 Apply NN for prediction MW and Dmax.
 Data are first resampled to get estimation of uncertainties
 """
+
 import argparse
 import logging
 logger = logging.getLogger(__name__)
@@ -49,7 +50,9 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from IPython.display import set_matplotlib_formats
 logging.getLogger('matplotlib.font_manager').disabled = True
-set_matplotlib_formats('svg')
+#set_matplotlib_formats('svg')
+import matplotlib_inline.backend_inline
+matplotlib_inline.backend_inline.set_matplotlib_formats('svg')
 # from scipy import stats
 
 smax3 = 1.0
@@ -78,7 +81,7 @@ try:
     s = cur['s']
     if units == "nanometer":
         s = [ss / 10.0 for ss in s]  # change to angstroms
-        Rg = Rg / 10.0
+        Rg = Rg * 10.0
     smin = min(s)
     smax = max(s)
     if smin > smin0:

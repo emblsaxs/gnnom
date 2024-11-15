@@ -198,7 +198,9 @@ model.add(Activation('tanh'))
 # model.add(Activation('relu'))
 model.add(Dense(output, use_bias=False))
 
-adama = optimizers.Adam(lr=0.0001)  # , amsgrad=True, epsilon=0.1)  # lr=0.001 is default
+#adama = optimizers.Adam(lr=0.0001)  # , amsgrad=True, epsilon=0.1)  # lr=0.001 is default
+import tensorflow as tf
+adama = tf.keras.optimizers.Adam(lr=0.0001)  # , amsgrad=True, epsilon=0.1)  # lr=0.001 is default
 
 model.compile(optimizer=adama, loss='mean_absolute_percentage_error')  # was loss='mse'
 
