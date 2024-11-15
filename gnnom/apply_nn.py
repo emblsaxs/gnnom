@@ -15,9 +15,6 @@ Apply NN for prediction MW and Dmax.
 Data are first resampled to get estimation of uncertainties
 """
 
-import tensorflow as tf
-adama = tf.keras.optimizers.Adam(lr=0.0001)  # , amsgrad=True, epsilon=0.1)  # lr=0.001 is default
-
 import argparse
 import logging
 logger = logging.getLogger(__name__)
