@@ -50,8 +50,8 @@ jobs:
         python gnnom/apply_nn.py p dmax testdata/SASDCK2.dat 0.037 32.87 --n 1001 --mode DEBUG --units angstrom
         python gnnom/apply_nn.py p mw testdata/SASDAB2.dat 1206.41 1.3 --n 1002 --mode DEBUG --units nanometer
         python gnnom/apply_nn.py p dmax testdata/SASDAB2.dat 1206.41 1.3 --n 1002 --mode DEBUG --units nanometer
-        python gnnom/apply_nn.py p mw testdata/SASDA92.dat 1206.41 1.3 --n 1003 --mode DEBUG --units nanometer
-        python gnnom/apply_nn.py p dmax testdata/SASDA92.dat 1206.41 1.3 --n 1003 --mode DEBUG --units nanometer
+        python gnnom/apply_nn.py p mw testdata/SASDA92.dat 221.0 4.1 --n 1003 --mode DEBUG --units nanometer
+        python gnnom/apply_nn.py p dmax testdata/SASDA92.dat 221.0 4.1 --n 1003 --mode DEBUG --units nanometer
         find . -name *.svg
         pwd
     - name: 'Upload Artifact'
