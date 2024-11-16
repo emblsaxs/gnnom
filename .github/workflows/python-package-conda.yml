@@ -59,7 +59,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: svg-histo-artifact
-        path: 
+        path: |
              gnnom-1.0/testdata/p-*.svg
              gnnom-1.0/requirements.txt
         retention-days: 5
