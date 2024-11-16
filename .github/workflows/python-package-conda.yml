@@ -54,12 +54,14 @@ jobs:
         python gnnom/apply_nn.py p dmax testdata/SASDA92.dat 221.0 4.1 --n 1003 --mode DEBUG --units nanometer
         find . -name *.svg
         pwd
+        pip freeze > requirements.txt
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v3
       with:
         name: svg-histo-artifact
         path: 
              gnnom-1.0/testdata/p-*.svg
+             gnnom-1.0/requirements.txt
         retention-days: 5
 #    - name: 'Build and push to Docker hub'
 #      uses: mr-smithers-excellent/docker-build-push@v5
